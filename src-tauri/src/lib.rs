@@ -468,7 +468,7 @@ async fn download_excel_summary(
         .dialog()
         .file()
         .add_filter("Excel Workbook", &["xlsx"])
-        .set_file_name("hpo_annotations.xlsx")
+        .set_file_name(fname)
         .blocking_save_file();
 
     let Some(path) = file_path else {

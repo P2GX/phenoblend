@@ -20,7 +20,7 @@ import {
   UpsetPlotPayload,
 } from 'ngx-phenoprofile';
 
-// 1. Define a literal type for your 3 view modes
+//  3 view modes
 type VisualizationType = 'overlap' | 'upset' | 'spread';
 type ExportFormat = 'svg' | 'pdf';
 
@@ -185,6 +185,7 @@ export class PhenotypeProfileVisualizerComponent implements OnInit {
 
   downloadSummary() {
     const dataType: VisualizationType = this.activeView();
+    console.log("Download summary datat=", dataType);
     const recordData = Object.fromEntries(
       this.annotationService.selectedAssociations(),
     );

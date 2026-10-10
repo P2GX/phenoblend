@@ -16,6 +16,7 @@ use crate::enrichment::dto::DuoEnrichmentSummary;
 use crate::enrichment::gdannotation_source::{GeneDiseaseAnnotationSource, OntoliusDescendants};
 use crate::enrichment::melded_ppkt::MeldedPpkt;
 use crate::enrichment::test::{EnrichmentTest, Method};
+use crate::excel::payload_to_excel::export_upset_plot_to_xlsx;
 use crate::{blend::dto::OverlapPlotPayload, hpoa::disease_model::SimpleDiseaseModel, model::{proband::Proband, simple_term::SimpleOntologyTerm}};
 use crate::hpoa::disease_model::GeneDiseaseAssociation;
 use crate::util::settings::PhenoblendSettings;
@@ -296,10 +297,18 @@ impl PhenoblendSingleton {
     -> Result<(), String> {
         if data_type == "overlap" {
             let payload = self.calculate_overlap_matrix(annotations)?;
-            crate::excel::overlap_to_excel::export_overlap_plot_to_xlsx(& payload, &path_str)
+            crate::excel::payload_to_excel::export_overlap_plot_to_xlsx(&payload, &path_str)
                 .map_err(|e| format!("Could not output overlap Excel file: {e}"))?;
+            Ok(())
+        } else if data_type == "upset" {
+            let payload = self.get_upset_plot_payload(annotations)?;
+            export_upset_plot_to_xlsx(&payload, &path_str)
+                .map_err(|e| format!("Could not output upset Excel file: {e}"))?;
+            Ok(())
+        } else {
+            Err(format!("{data_type} excel export not supported yet"))
         }
-        Err(format!("{data_type} excel export not supported yet"))
+        
     }
 
 

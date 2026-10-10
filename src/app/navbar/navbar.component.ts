@@ -25,7 +25,7 @@ export class NavbarComponent implements OnInit{
     return false; 
   }
   logClick(path: string) {
-    console.log(`Link clicked for target path: ${path}`);
+    // no-op console.log(`Link clicked for target path: ${path}`);
   }
 
 }
