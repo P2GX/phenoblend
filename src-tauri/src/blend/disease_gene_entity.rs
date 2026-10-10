@@ -153,8 +153,51 @@ impl GeneDiseaseEntity {
     }
 
 
-    ///If the gene is annotated with an ancestor (a broader parent term) rather than the precise term. 
-    /// It quantifies the specificity using a ratio of disease annotations:
+    /// Scores a *partial* match between a query phenotype and the HPO annotations
+    /// of a gene's disease.
+    ///
+    /// A partial match means the gene's disease is not annotated with the query term
+    /// itself but with one of its ancestors (a broader term). The score measures how
+    /// much more specific the query term is than that ancestor, as a ratio of disease
+    /// counts:
+    ///
+    /// ```text
+    /// score = disease_counts[query_hpo] / max(disease_counts[a])
+    /// ```
+    ///
+    /// where `a` ranges over the terms in `gde.disease_hpo_ids` that are ancestors of
+    /// `query_hpo`. Taking the maximum means the broadest (most common) ancestor
+    /// determines the score, which gives the most conservative value when several
+    /// ancestors match.
+    ///
+    /// Interpretation: a score near 1 means the ancestor is about as specific as the
+    /// query term, so the match is nearly as good as an exact one. A score near 0 means
+    /// the ancestor is far more general. For example, if the query term is annotated to
+    /// 5 diseases and the broadest matching ancestor is annotated to 50, the score is
+    /// `0.1`.
+    ///
+    /// # Arguments
+    ///
+    /// * `query_hpo` - The phenotype term being scored.
+    /// * `gde` - The gene-disease entity whose `disease_hpo_ids` are searched for
+    ///   ancestors of `query_hpo`.
+    /// * `hpo` - The ontology, used for ancestor queries.
+    /// * `disease_counts` - Number of diseases annotated with each HPO term. Terms
+    ///   missing from the map count as `0`.
+    ///
+    /// # Returns
+    ///
+    /// A score in `(0.0, 1.0]` if the counts are propagated (see Notes), or `0.0` if
+    /// the query term is not annotated to any disease or if none of the gene's
+    /// disease terms is an ancestor of the query term.
+    ///
+    /// # Notes
+    ///
+    /// * Only ancestors count. A disease term identical to `query_hpo` is not
+    ///   considered here, so exact matches must be handled by the caller.
+    /// * The `(0.0, 1.0]` bound assumes `disease_counts` is propagated up the
+    ///   hierarchy, so an ancestor's count is never smaller than that of its
+    ///   descendants. With direct-annotation counts the ratio can exceed 1.
     pub fn partial_match_score(
         query_hpo:&TermId, 
         gde: &GeneDiseaseEntity,
@@ -163,39 +206,39 @@ impl GeneDiseaseEntity {
             let pheno_hpo_count = *disease_counts.get(query_hpo).unwrap_or(&0);
             //trace!("partial_match_score-pheno_hpo_count={}", pheno_hpo_count);
             let mut not_anc = 0;
-            if pheno_hpo_count > 0 {
-                // Find the maximum disease count among the more specific descendant terms
-                let mut max_geno_hpo_count = 0;
-                for disease_hpo_id in &gde.disease_hpo_ids {
-                    if hpo.is_descendant_of(query_hpo, disease_hpo_id ) {
-                        let anc_count = *disease_counts.get(disease_hpo_id).unwrap_or(&0);
-                        if anc_count > max_geno_hpo_count {
-                            max_geno_hpo_count = anc_count;
-                        }
-                        trace!(
-                        "{} descendant of ? {} (Y/N:{}) count={} pheno_hpo_count={}",
-                        disease_hpo_id,
-                        query_hpo,
-                        hpo.is_descendant_of(query_hpo, disease_hpo_id),
-                        disease_counts.get(disease_hpo_id).unwrap_or(&0),
-                        pheno_hpo_count
-                    );
-                    } else {
-                        not_anc += 1;
+            if pheno_hpo_count == 0 {
+                return 0.0 as f64;
+            }
+            // Find the maximum disease count among the more specific descendant terms
+            let mut max_geno_hpo_count = 0;
+            for disease_hpo_id in &gde.disease_hpo_ids {
+                if hpo.is_descendant_of(query_hpo, disease_hpo_id ) {
+                    let anc_count = *disease_counts.get(disease_hpo_id).unwrap_or(&0);
+                    if anc_count > max_geno_hpo_count {
+                        max_geno_hpo_count = anc_count;
                     }
-                    
-                }
-                trace!("Not ancester {}", not_anc);
-                println!("max_geno_hpo_count={}", max_geno_hpo_count);
-                let score = pheno_hpo_count  as f64 /  max_geno_hpo_count as f64;
-                if score > 0 as f64{
-                    trace!("score={}", score);
+                    trace!(
+                    "{} descendant of ? {} (Y/N:{}) count={} pheno_hpo_count={}",
+                    disease_hpo_id,
+                    query_hpo,
+                    hpo.is_descendant_of(query_hpo, disease_hpo_id),
+                    disease_counts.get(disease_hpo_id).unwrap_or(&0),
+                    pheno_hpo_count
+                );
+                } else {
+                    not_anc += 1;
                 }
                 
-                score
-            } else {
-                0.0
             }
+           
+            let score = if max_geno_hpo_count == 0 {
+                0.0
+            } else {
+                pheno_hpo_count  as f64 /  max_geno_hpo_count as f64
+            };
+            trace!("score={} - Not ancestor={} - max_geno_hpo_count={} - ",score, not_anc, max_geno_hpo_count);
+            score
+            
     }
 
 
@@ -204,3 +247,65 @@ impl GeneDiseaseEntity {
 }
 
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+    use std::sync::Arc;
+    use std::collections::HashMap;
+    use ontolius::TermId;
+    use crate::tests::hpo_fixture::hpo;
+    
+
+    #[rstest::fixture]
+    pub fn brca_disease() -> SimpleOntologyTerm {
+        SimpleOntologyTerm::new("OMIM:604370", "Breast-ovarian cancer, familial, 1").unwrap()
+    }
+
+    #[rstest]
+    #[case(0, 0, 0.0)]     // Zero proband count -> should be 0.0
+    #[case(10, 0, 0.0)]    // Zero descendant count -> should be 0.0
+    #[case(5, 10, 0.5)]    // Normal calculation: 5 / 10 = 0.5
+    fn test_partial_match_score_edge_cases(
+        hpo: Arc<FullCsrOntology>,
+        #[case] pheno_count: usize,
+        #[case] max_geno_count: usize,
+        #[case] expected_score: f64,
+    ) {
+        // Mock or construct your inputs here. 
+        // Since `partial_match_score` relies on `disease_counts` and `hpo`, 
+        // you can populate a mock disease_counts map to mimic these counts.
+        
+        let mut disease_counts = HashMap::new();
+        let disease_hpo: TermId = "HP:0000118".parse().unwrap(); // Phenotypic abnormality, meant just to be a more general ancestor term
+        let query_hpo : TermId = "HP:0001234".parse().unwrap(); // Hitchhiker thumb
+
+        if pheno_count > 0 {
+            disease_counts.insert(query_hpo.clone(), pheno_count);
+        }
+        if max_geno_count > 0 {
+            disease_counts.insert(disease_hpo.clone(), max_geno_count);
+        }
+        let bca = SimpleOntologyTerm::new("OMIM:604370", "Breast-ovarian cancer, familial, 1").unwrap();
+        let hpo_set = HashSet::from([
+            (disease_hpo),
+        ]);
+        let gde = GeneDiseaseEntity {
+            gene_symbol:"BRCA1".to_string(),
+            disease_hpo_ids: hpo_set, 
+            ncbi_gene_id: "672".to_string(), 
+            disease_list: vec![bca]
+        };
+
+
+        let score = GeneDiseaseEntity::partial_match_score(
+            &query_hpo,
+            &gde,
+            hpo,
+            &disease_counts,
+        );
+
+        assert!((score - expected_score).abs() < f64::EPSILON);
+        assert!(score.is_finite(), "Score must never be INF or NaN!");
+    }
+}

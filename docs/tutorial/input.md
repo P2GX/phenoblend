@@ -1,3 +1,3 @@
 # Input data
 
-- todo how to load it
+Users need to input both a list of [Human Phenotype Ontology (HPO)]()

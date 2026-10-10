@@ -7,6 +7,10 @@ mod hpo;
 mod model;
 mod blend;
 mod util;
+#[cfg(test)]
+pub mod tests;
+
+
 use serde::{self,Serialize};
 
 use fenominal::OntologyMatch;
@@ -51,13 +55,13 @@ pub fn run() {
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(log_level)
-                .level_for("tao", log::LevelFilter::Warn)
-                .level_for("winit", log::LevelFilter::Warn)
-                .level_for("tauri", log::LevelFilter::Warn)
+                //.level_for("tao", log::LevelFilter::Warn)
+               // .level_for("winit", log::LevelFilter::Warn)
+                //.level_for("tauri", log::LevelFilter::Warn)
                 .targets([
                     Target::new(TargetKind::Stdout),
-                    Target::new(TargetKind::LogDir { file_name: Some("phenoblendtk.log".to_string()) }), 
-                    Target::new(TargetKind::Webview), // forwards logs to the browser devtools console
+                   // Target::new(TargetKind::LogDir { file_name: Some("phenoblendtk.log".to_string()) }), 
+                   // Target::new(TargetKind::Webview), // forwards logs to the browser devtools console
                 ])
                 .build(),
         )
@@ -246,8 +250,8 @@ fn get_upset_plot_payload(
 fn get_spread_plot_payload( state: tauri::State<'_, Arc<AppState>>,
     annotations: HashMap<String, Vec<GeneDiseaseAssociation>>
 ) -> Result<SpreadPlotPayload, String> {
-     let state_handle = state.inner().clone();
-    let mut singleton = state_handle.phenoblendtk.lock().map_err(|e| e.to_string())?;
+    let state_handle = state.inner().clone();
+    let singleton = state_handle.phenoblendtk.lock().map_err(|e| e.to_string())?;
     singleton.get_spread_plot_payload(annotations)
   }
   
@@ -459,6 +463,7 @@ async fn download_excel_summary(
 {
     let mut singleton = state.phenoblendtk.lock()
         .map_err(|_| "Failed to lock state".to_string())?;
+    let fname = format!("{}-annotations.xlsx", data_type);
     let file_path = app
         .dialog()
         .file()

@@ -1,6 +1,6 @@
 [package]
 name = "phenoblendtk"
-version = "0.3.22"
+version = "0.3.24"
 description = "Phenoblend Toolkit"
 authors = ["Peter N Robinson"]
 edition = "2021"
@@ -44,7 +44,6 @@ csv = "1.4.0"
 phenopackets = "0.2.2-post2"
 itertools = "0.15.0"
 svg2pdf = "0.12"
-rstest = "0.26.1"
 rust_xlsxwriter = "0.96.0"
 log = "0.4"
 tauri-plugin-log = "2"
@@ -64,5 +63,9 @@ cap-lints = "allow"
 
 [profile.release.package."*"]
 cap-lints = "allow"
+
+[dev-dependencies]
+flate2 = "1.1.9"
+rstest = "0.27.0"
 
 
