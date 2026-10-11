@@ -1,8 +1,8 @@
 use std::{collections::{HashMap, HashSet},  sync::Arc};
 
-use ontolius::{TermId, ontology::{HierarchyQueries, OntologyTerms, csr::FullCsrOntology}, term::MinimalTerm};
+use ontolius::{TermId, ontology::{TaxonomyQuery, OntologyTerms, csr::FullCsrOntology}, term::MinimalTerm};
 use crate::{blend::dto::{OverlapPlotItem, OverlapPlotPayload, SpreadPlotPayload, UpsetPlotPayload}, hpoa::disease_model::GeneDiseaseAssociation, model::{proband::Proband, simple_term::SimpleOntologyTerm}};
-use log::{trace, debug, info, warn, error};
+use log::{trace};
 
 /// This is the structure we use for the phenoblend analysis. We have one such entity for each gene, and the entities can have one or more diseases associated with the gene
 /// disease_hpo_ids then has all the observed HPO identifiers for all of the diseases

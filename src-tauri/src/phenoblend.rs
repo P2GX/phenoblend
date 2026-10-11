@@ -3,8 +3,8 @@ use std::collections::HashSet;
 use std::{collections::HashMap, sync::Arc};
 
 use fenominal::{AutoCompleter, Fenominal, FenominalSentence, OntologyMatch};
-use ga4ghphetools::{dto::hpo_term_dto::HpoTermDuplet, tauri::load_ontology};
-use ga4ghphetools::tauri::models::HierarchyMapItem;
+use ga4ghphetools::{dto::hpo_term_dto::HpoTermDuplet, load_ontology};
+use ga4ghphetools::HierarchyMapItem;
 use ontolius::{TermId,  ontology::csr::FullCsrOntology};
 use phenopackets::schema::v2::Phenopacket;
 use rand::SeedableRng;
@@ -17,6 +17,7 @@ use crate::enrichment::gdannotation_source::{GeneDiseaseAnnotationSource, Ontoli
 use crate::enrichment::melded_ppkt::MeldedPpkt;
 use crate::enrichment::test::{EnrichmentTest, Method};
 use crate::excel::payload_to_excel::export_upset_plot_to_xlsx;
+use crate::model::notebook::Notebook;
 use crate::{blend::dto::OverlapPlotPayload, hpoa::disease_model::SimpleDiseaseModel, model::{proband::Proband, simple_term::SimpleOntologyTerm}};
 use crate::hpoa::disease_model::GeneDiseaseAssociation;
 use crate::util::settings::PhenoblendSettings;
@@ -28,7 +29,8 @@ pub struct PhenoblendSingleton {
     pub(crate) omim_disease_models:  Option<HashMap<TermId, SimpleDiseaseModel>>,
     pub(crate) gene_to_disease_d: Option<HashMap<String, Vec<GeneDiseaseAssociation>>>,
     pub(crate) disease_count_d: HashMap<TermId, usize>,
-    pub(crate) autocompleter: Option<AutoCompleter>
+    pub(crate) autocompleter: Option<AutoCompleter>,
+    pub(crate) notebook: Option<Notebook>
 }
 
 
@@ -65,6 +67,7 @@ impl PhenoblendSingleton {
         let _ = self.settings.set_g2d_path(g2d_path);
     }
 
+    /// Input a GA4GH Phenopacket.
     pub fn ingest_ppkt(&mut self, ppkt: Phenopacket) -> Result<(), String> {
         let proband_id = match ppkt.subject {
             Some(sjt) => sjt.id.clone(),
@@ -91,7 +94,7 @@ impl PhenoblendSingleton {
             disease_list.push(sterm);
         }
         for interpretation in ppkt.interpretations {
-            if let Some(symbol) = ga4ghphetools::ppkt::get_gene_symbol_from_interpretation(&interpretation) {
+            if let Some(symbol) = ga4ghphetools::get_gene_symbol_from_interpretation(&interpretation) {
                 gene_symbol_list.push(symbol);
             }
         }
@@ -99,11 +102,34 @@ impl PhenoblendSingleton {
             id: proband_id, 
             gene_list: gene_symbol_list, 
             disease_list: disease_list, 
-            observed_hpos: observed_hpo
+            observed_hpos: observed_hpo.clone()
         };
         self.individual = proband;
+        let hpo = self.hpo
+            .clone()
+            .ok_or_else(|| "HPO ontology not loaded".to_string())?;
+       
+        let simple_observed = crate::hpo::hpo_util::ontolius_to_simple_list(hpo.clone(), &observed_hpo)?;
+        self.init_notebook_from_ppkt(&ppkt.id, &simple_observed);
         Ok(())
     }
+
+
+    fn init_notebook_from_ppkt(
+        &mut self, 
+        id: impl Into<String>, 
+        observed_hpo: &Vec<SimpleOntologyTerm>) {
+            let notebook = Notebook::from_ppkt(observed_hpo.clone(), id.into());
+            self.notebook = Some(notebook);
+    }
+
+    fn init_notebook_from_ner(
+        &mut self,
+         observed_hpo: &Vec<SimpleOntologyTerm>) {
+            let notebook = Notebook::from_ner(observed_hpo.clone());
+            self.notebook = Some(notebook);
+    }
+
 
     pub fn add_observed_hpos_from_ner(
         &mut self,
@@ -118,9 +144,15 @@ impl PhenoblendSingleton {
             id: String::default(), 
             gene_list: vec![], 
             disease_list: vec![], 
-            observed_hpos: observed_tid
+            observed_hpos: observed_tid.clone()
          };
         self.individual = proband;
+        let hpo = self.hpo
+            .clone()
+            .ok_or_else(|| "HPO ontology not loaded".to_string())?;
+       
+        let simple_observed = crate::hpo::hpo_util::ontolius_to_simple_list(hpo.clone(), &observed_tid)?;
+        self.init_notebook_from_ner(&simple_observed);
         Ok(())
     }
 
@@ -212,7 +244,7 @@ impl PhenoblendSingleton {
     pub fn get_hpo_parent_and_children_terms(&self, term_id: &str) -> Result<HierarchyMapItem, String> {
         match &self.hpo {
             Some(hpo) => {
-                let hm = ga4ghphetools::tauri::parent_child::get_hpo_parent_and_children_terms(term_id, hpo.clone());
+                let hm = ga4ghphetools::get_hpo_parent_and_children_terms(term_id, hpo.clone());
                 Ok(hm)
             },
             None => Err("Could not retrieve parent/child hierarchy".to_string())
@@ -224,13 +256,13 @@ impl PhenoblendSingleton {
         text: &str
      ) -> Result<Vec<FenominalSentence>, String> {
         let hpo = self.hpo.as_ref().ok_or_else(|| "HPO not initialized".to_string())?;
-        let fenominal = Fenominal::new(hpo.clone());
+        let fenominal = Fenominal::new_hpo(hpo.clone());
         fenominal.mine_sentences(text).map_err(|e|e.to_string())
     }
 
     pub fn get_modifiers(&self) -> Result<Vec<HpoTermDuplet>, String> {
         let hpo = self.hpo.as_ref().ok_or_else(|| "HPO not initialized".to_string())?;
-        ga4ghphetools::hpo::get_modifiers(hpo.clone())
+        ga4ghphetools::get_modifiers(hpo.clone())
     }
 
     pub fn perform_hpo_autocomplete(&self, query: String) -> Result<Vec<OntologyMatch>, String> {
@@ -308,7 +340,6 @@ impl PhenoblendSingleton {
         } else {
             Err(format!("{data_type} excel export not supported yet"))
         }
-        
     }
 
 
@@ -391,7 +422,8 @@ impl Default for PhenoblendSingleton {
             omim_disease_models: None,
             gene_to_disease_d: None,
             disease_count_d: HashMap::new(),
-            autocompleter: None
+            autocompleter: None,
+            notebook: None
         };
        if let Some(ontology) = settings.get_hp_json_path().ok().and_then(|path| load_ontology(&path).ok()) {
             singleton.hpo = Some(ontology.clone());
@@ -403,7 +435,7 @@ impl Default for PhenoblendSingleton {
         }
         if let Some(omim_map) = settings.get_hpoa_path().ok().and_then(|path| crate::hpoa::hpoa_ingest::load_hpoa_d(&path).ok()) {
             singleton.omim_disease_models = Some(omim_map);
-            singleton.calculate_disease_counts();
+            let _ = singleton.calculate_disease_counts();
         }
         if let Some(g2d) = settings.get_g2d_path().ok().and_then(|path| crate::hpoa::gene_to_disease::load_gene_disease_associations(&path).ok()) {
             singleton.gene_to_disease_d = Some(g2d);

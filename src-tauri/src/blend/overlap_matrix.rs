@@ -8,7 +8,7 @@ use crate::blend::dto::OverlapPlotItem;
 use crate::blend::dto::OverlapPlotPayload;
 use crate::hpoa::disease_model::GeneDiseaseAssociation;
 use crate::model::proband::Proband;
-use log::{trace, debug, info, warn, error};
+
 
 
 /// Converts raw gene->GDA mappings into clean entities (order not significant here).

@@ -16,13 +16,13 @@ use serde::{self,Serialize};
 use fenominal::OntologyMatch;
 use fenominal::FenominalSentence;
 use ga4ghphetools::dto::hpo_term_dto::HpoTermDuplet;
-use ga4ghphetools::tauri::models::HierarchyMapItem;
+use ga4ghphetools::HierarchyMapItem;
 use ontolius::ontology::OntologyTerms;
 use tauri_plugin_dialog::DialogExt;
 use tauri::{AppHandle, Emitter, WindowEvent};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use ga4ghphetools::tauri::{pick_file_and_process, load_ontology, OntologyLoadEvent};
+use ga4ghphetools::{pick_file_and_process, load_ontology, OntologyLoadEvent};
 use phenopackets::schema::v2::Phenopacket;
 
 use crate::blend::dto::UpsetPlotPayload;
@@ -130,6 +130,8 @@ fn ingest_phenopacket(
     singleton.ingest_ppkt(phenopacket)?;
     Ok(())
 }
+
+
 /// Load the Human Phenotype Ontology (HPO)
 #[tauri::command]
 async fn load_hpo(

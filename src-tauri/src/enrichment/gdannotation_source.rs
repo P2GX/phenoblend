@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use ontolius::TermId;
 use ontolius::ontology::csr::FullCsrOntology;
-use ontolius::ontology::HierarchyWalks;
+use ontolius::ontology::TaxonomyWalk;
 use super::annotation_source::{AnnotationSource, DescendantsProvider};
 use crate::hpoa::disease_model::{GeneDiseaseAssociation};
 

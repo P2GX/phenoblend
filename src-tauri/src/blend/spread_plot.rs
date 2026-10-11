@@ -3,7 +3,7 @@ use std::sync::Arc;
 use itertools::Itertools;
 
 use ontolius::TermId;
-use ontolius::ontology::{HierarchyQueries, HierarchyWalks, OntologyTerms};
+use ontolius::ontology::{TaxonomyQuery, TaxonomyWalk, OntologyTerms};
 use ontolius::ontology::csr::FullCsrOntology;
 use ontolius::term::MinimalTerm;
 

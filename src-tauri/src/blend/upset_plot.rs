@@ -1,6 +1,6 @@
 use std::{collections::HashSet, sync::Arc};
 use itertools::Itertools;
-use ontolius::{TermId, ontology::{HierarchyWalks, csr::FullCsrOntology}};
+use ontolius::{TermId, ontology::{TaxonomyWalk, csr::FullCsrOntology}};
 
 use crate::{blend::{disease_gene_entity::GeneDiseaseEntity, dto::UpsetPlotPayload}, model::proband::Proband};
 

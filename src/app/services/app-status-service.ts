@@ -1,14 +1,9 @@
 import { Injectable, signal, inject, NgZone, computed } from '@angular/core';
 import { listen } from '@tauri-apps/api/event';
-import { StatusDto, defaultStatusDto } from '../models/status_dto';
 import { invoke } from '@tauri-apps/api/core';
-import { ask } from '@tauri-apps/plugin-dialog';
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { NotificationService, OntologyLoadEvent } from 'ng-hpo-uikit';
 import { WritableSignal } from '@angular/core';
 import { InitializationStatusDto } from '../models/status_dto'; 
-
-
 
 
 @Injectable({ providedIn: 'root' })
@@ -34,17 +29,15 @@ export class AppStatusService {
   errorMessage = signal<string>('');
   hasError = computed(() => !!this.errorMessage());
 
-    constructor() {
-      this.setupListeners().then(() => {
-        this.fetchPreloadedStatus();
-      });
-    }
-
-
+  constructor() {
+    this.setupListeners().then(() => {
+      this.fetchPreloadedStatus();
+    });
+  }
 
 
  private async setupListeners() {
-    // Bind the HPO Stream
+    // HPO
     await this.registerOntologyListener({
       channel: 'hpo-load-event',
       loadingSignal: this.hpoLoading,
@@ -54,7 +47,7 @@ export class AppStatusService {
       errorContext: 'HPO'
     });
 
-    // Bind the HPOA Stream 
+    // HPOA 
     await this.registerOntologyListener({
       channel: 'hpoa-load-event',
       loadingSignal: this.hpoaLoading,
@@ -64,6 +57,7 @@ export class AppStatusService {
       errorContext: 'HPOA'
     });
 
+    // Gene-Disease associations
     await this.registerOntologyListener({
       channel: 'g2d-load-event',
       loadingSignal: this.g2dLoading,
@@ -129,15 +123,12 @@ private async registerOntologyListener(config: {
       this.ngZone.run(() => {
         this.hpoLoaded.set(status.hpo_loaded);
         this.nHpoTerms.set(status.hpo_terms);
-        if (status.hpo_loaded) this.hpoVersion.set('Preloaded from Settings');
 
         this.hpoaLoaded.set(status.hpoa_loaded);
         this.nHpoaDisease.set(status.hpoa_diseases);
-        if (status.hpoa_loaded) this.hpoaVersion.set('Preloaded from Settings');
 
         this.g2dLoaded.set(status.g2d_loaded);
         this.nGenes.set(status.n_genes);
-        if (status.g2d_loaded) this.g2dVersion.set('Preloaded from Settings');
       });
     } catch (err: any) {
       console.error('Failed to resolve initial backend pre-load state context:', err);

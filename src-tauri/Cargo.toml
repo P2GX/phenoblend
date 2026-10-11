@@ -1,6 +1,6 @@
 [package]
 name = "phenoblendtk"
-version = "0.3.24"
+version = "0.3.25"
 description = "Phenoblend Toolkit"
 authors = ["Peter N Robinson"]
 edition = "2021"
@@ -19,15 +19,17 @@ tauri-build = { version = "2.6.2", features = [] }
 
 [dependencies]
 dirs = "6.0"
-ontolius = "0.7.4" 
+ontolius = "0.8.1" 
 reqwest = { version = "0.13.3", features = ["json", "blocking"] }
 rfd = { version = "0.16.0", default-features = false}
-fenominal = { git = 'https://github.com/P2GX/fenominal.git',  tag = '0.2.15' , features = ["serde"] }
+fenominal = { git = 'https://github.com/P2GX/fenominal.git',  tag = '0.3.4' , features = ["serde"] }
 #fenominal = { path = '../../fenominal',features = ["serde"] }
-ga4ghphetools = { git = 'https://github.com/P2GX/ga4ghphetools.git', features= ["tauri"], tag = '0.6.19' }
-#ga4ghphetools = { path = "../../ga4ghphetools", features= ["tauri"] }
+#ga4ghphetools = { git = 'https://github.com/P2GX/ga4ghphetools.git', features= ["tauri"], tag = '0.7.11' }
+ga4ghphetools = { path = "../../ga4ghphetools", features= ["tauri"] }
+#oboannotation = "0.2.0"
+oboannotation = { path = "../../oboannotation" }
 serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.148"
+serde_json = "1.0.152"
 toml = "0.9.8"
 tauri = { version = "2.11.2", features = [] }
 tauri-plugin-dialog = { version = "2", default-features = false }
@@ -37,18 +39,20 @@ tokio = { version = "1.52.3", features = ["full"] }
 tracing = "0.1.44"
 tracing-subscriber = "0.3.22"
 regex = "1.12.3"
-tauri-plugin-shell = "2.3.5"
-oboannotation = "0.2.0"
+tauri-plugin-shell = "2.5.0"
+
 thiserror = "2.0.18"
 csv = "1.4.0"
 phenopackets = "0.2.2-post2"
 itertools = "0.15.0"
-svg2pdf = "0.12"
-rust_xlsxwriter = "0.96.0"
+svg2pdf = "0.13"
+rust_xlsxwriter = "0.99"
 log = "0.4"
 tauri-plugin-log = "2"
-statrs = "0.18.0"
-rand = "0.10.2"
+statrs = "0.19"
+rand = "0.10"
+uuid = { version = "1.28", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] } # Optional, if you want rich date/time handling
 
 
 [target.'cfg(target_os = "linux")'.dependencies]

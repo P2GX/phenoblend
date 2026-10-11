@@ -1,4 +1,5 @@
-use ontolius::{Identified, TermId};
+
+use ontolius::TermId;
 use serde::{Serialize, Serializer};
 
 
@@ -27,7 +28,91 @@ impl SimpleOntologyTerm {
         })
     }
 
+    pub fn from_term_id(term_id: &TermId,  label: impl Into<String>) -> Self {
+        Self {
+            term_id: term_id.clone(),
+            term_label: label.into()
+        }
+    }
+
+
     pub fn term_id_as_string(&self) -> String {
-        self.term_id.identifier().to_string()
+        self.term_id.to_string()
+    }
+
+
+ 
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_parses_valid_term_id() {
+        let t = SimpleOntologyTerm::new("HP:0001250", "Seizure").unwrap();
+        assert_eq!(t.term_label, "Seizure");
+        assert_eq!(t.term_id_as_string(), "HP:0001250");
+    }
+
+    #[test]
+    fn new_accepts_owned_strings() {
+        let t = SimpleOntologyTerm::new(String::from("HP:0000118"), String::from("Phenotypic abnormality")).unwrap();
+        assert_eq!(t.term_id_as_string(), "HP:0000118");
+        assert_eq!(t.term_label, "Phenotypic abnormality");
+    }
+
+    #[test]
+    fn new_rejects_invalid_term_ids() {
+        for bad in ["", "not a term id", "HP0001250"] {
+            let err = SimpleOntologyTerm::new(bad, "label").unwrap_err();
+            assert!(
+                err.contains(bad),
+                "error message should echo the bad input '{bad}', got: {err}"
+            );
+        }
+    }
+
+    #[test]
+    fn from_term_id_copies_id_and_label() {
+        let tid: TermId = "HP:0001250".parse().unwrap();
+        let t = SimpleOntologyTerm::from_term_id(&tid, "Seizure");
+        assert_eq!(t.term_id, tid);
+        assert_eq!(t.term_label, "Seizure");
+        // original is still usable (function borrows, doesn't consume)
+        assert_eq!(tid.to_string(), "HP:0001250");
+    }
+
+    #[test]
+    fn new_and_from_term_id_agree() {
+        let tid: TermId = "HP:0001250".parse().unwrap();
+        let a = SimpleOntologyTerm::new("HP:0001250", "Seizure").unwrap();
+        let b = SimpleOntologyTerm::from_term_id(&tid, "Seizure");
+        assert_eq!(a.term_id, b.term_id);
+        assert_eq!(a.term_label, b.term_label);
+    }
+
+    #[test]
+    fn serializes_term_id_as_curie_string() {
+        let t = SimpleOntologyTerm::new("HP:0001250", "Seizure").unwrap();
+        let v = serde_json::to_value(&t).unwrap();
+        assert_eq!(v["term_id"], "HP:0001250");
+        assert_eq!(v["term_label"], "Seizure");
+        // exactly two fields, so the frontend contract doesn't silently change
+        assert_eq!(v.as_object().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn serializes_vec_of_terms() {
+        let terms = vec![
+            SimpleOntologyTerm::new("HP:0001250", "Seizure").unwrap(),
+            SimpleOntologyTerm::new("HP:0000118", "Phenotypic abnormality").unwrap(),
+        ];
+        let json = serde_json::to_string(&terms).unwrap();
+        assert_eq!(
+            json,
+            r#"[{"term_id":"HP:0001250","term_label":"Seizure"},{"term_id":"HP:0000118","term_label":"Phenotypic abnormality"}]"#
+        );
     }
 }
