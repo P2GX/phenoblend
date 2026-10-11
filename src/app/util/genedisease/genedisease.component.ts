@@ -5,8 +5,8 @@ import { startWith, debounceTime, switchMap, from, of, catchError } from 'rxjs';
 import { GeneDiseaseAssociation } from '../../models/interfaces';
 import { AnnotationService } from '../../services/annotation-service';
 import { Router } from '@angular/router';
-import { NotificationService } from 'ng-hpo-uikit';
-import { IconComponent } from "ngx-phenoprofile";
+import { IconComponent, NotificationService } from 'ng-hpo-uikit';
+
 
 interface GeneEntry {
   geneSymbol: string;

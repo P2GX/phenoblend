@@ -3665,7 +3665,7 @@ dependencies = [
 
 [[package]]
 name = "oboannotation"
-version = "0.2.1"
+version = "0.2.1-dev0"
 dependencies = [
  "ontolius",
  "regex",
@@ -3923,7 +3923,7 @@ dependencies = [
 
 [[package]]
 name = "phenoblendtk"
-version = "0.3.26"
+version = "0.3.27"
 dependencies = [
  "chrono",
  "csv",

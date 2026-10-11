@@ -1,6 +1,6 @@
 {
   "name": "phenoblendtk",
-  "version": "0.3.26",
+  "version": "0.3.27",
   "scripts": {
     "ng": "ng",
     "start": "nx serve phenoblendtk --port 1420",
@@ -39,7 +39,7 @@
     "@tauri-apps/plugin-dialog": "^2.6.0",
     "@tauri-apps/plugin-fs": "^2.4.5",
     "@tauri-apps/plugin-opener": "^2.5.3",
-    "@tauri-apps/plugin-shell": "^2.3.5",
+    "@tauri-apps/plugin-shell": "^2.5.0",
     "d3": "^7.9.0",
     "ng-hpo-uikit": "github:P2GX/ng-hpo-uikit#dist-build",
     "rxjs": "~7.8.0",

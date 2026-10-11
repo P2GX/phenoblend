@@ -2,8 +2,9 @@ use std::collections::{HashMap, HashSet};
 
 use log::{trace, warn};
 
+use oboannotation::hpo::{FrequencyData, HpoAnnotations};
 use oboannotation::io::AnnotationLoader;
-use oboannotation::hpo::io::{HpoAnnotationLines, HpoAnnotationLoader};
+
 
 use ontolius::TermId;
 
@@ -35,18 +36,18 @@ type DiseaseTermKey = (TermId, TermId);
 ///   ratio < 1 down to 0.0, which silently reclassifies real annotations
 ///   (e.g. "74/95") as excluded. This was the root cause of terms like
 ///   Lisch nodules / NF1 disappearing.
-fn frequency_to_f64(freq: Option<oboannotation::hpo::Frequency>) -> f64 {
+fn frequency_to_f64(freq: Option<oboannotation::hpo::FrequencyData>) -> f64 {
     freq.map_or(1.0, |f| match f {
-        oboannotation::hpo::Frequency::TermId(term_id) if term_id == *EXCLUDED_TERM_ID => 0.0,
-        oboannotation::hpo::Frequency::TermId(_) => 1.0,
-        oboannotation::hpo::Frequency::Ratio { numerator, denominator } => {
+        oboannotation::hpo::FrequencyData::TermId(term_id) if term_id == *EXCLUDED_TERM_ID => 0.0,
+        oboannotation::hpo::FrequencyData::TermId(_) => 1.0,
+        oboannotation::hpo::FrequencyData::Ratio{ n:numerator, m:denominator } => {
             if denominator == 0 {
                 0.0
             } else {
                 numerator as f64 / denominator as f64
             }
         }
-        oboannotation::hpo::Frequency::Frequency(freq) => freq,
+        oboannotation::hpo::FrequencyData::Percentage(perc) => 0.01*perc,
     })
 }
 
@@ -137,22 +138,40 @@ fn build_models(
     simple_model_d
 }
 
+
+fn get_term_f(term_id: &TermId) -> Result<f64, String> {
+    super::frequency_term::FrequencyTerm::try_from(term_id).map(super::frequency_term::FrequencyTerm::mean_frequency)
+}
+
+fn get_freq_float(freqd: &FrequencyData) -> Result<f64, String>  {
+    match freqd {
+        FrequencyData::TermId(term_id) => get_term_f(term_id),
+        FrequencyData::Ratio { n, m } if *m > 0 => Ok(f64::from(*n) / f64::from(*m)),
+        FrequencyData::Ratio { .. } => Ok(0.0), // zero denominator: no usable ratio
+        FrequencyData::Percentage(perc) => Ok(f64::from(*perc) / 100.0),
+    }
+}
+
 pub fn load_hpoa_d(fpath_hpoa: &str) -> Result<HashMap<TermId, SimpleDiseaseModel>, PhenoblendError> {
-    let loader = HpoAnnotationLoader::default();
-    let data: HpoAnnotationLines = loader
-        .load_from_path(fpath_hpoa)
+    let data: oboannotation::hpo::HpoAnnotations = HpoAnnotations::load_from_path(fpath_hpoa)
         .map_err(|e| PhenoblendError::hpoa_load_error(format!("{fpath_hpoa}: {e}")))?;
-    let rows = data.lines.iter().filter_map(|line| {
-        if line.disease_id.prefix().to_string() != OMIM_PREFIX {
-            return None;
-        }
-        Some(ParsedRow {
-            disease_id: line.disease_id.clone(),
-            disease_name: line.disease_name.clone(),
-            hpo_term_id: line.phenotype_term_id.clone(),
-            freq: frequency_to_f64(line.frequency.clone()),
+    let rows: Vec<ParsedRow> = data
+        .annotations()
+        .into_iter()
+        .filter(|line| line.disease_id.prefix().to_string() != OMIM_PREFIX)
+        .map(|line| {
+            let freq: f64 = match &line.frequency {
+                Some(freq) => get_freq_float(freq.data()).map_err(|e|PhenoblendError::parse_error(e))?,
+                None => 1.0, // by default, if no freq data available it is assumed to be 100%.
+            };
+            Ok(ParsedRow {
+                disease_id: line.disease_id.clone(),
+                disease_name: line.disease_name.clone(),
+                hpo_term_id: line.phenotype_term_id.clone(),
+                freq,
+            })
         })
-    });
+        .collect::<Result<_, PhenoblendError>>()?;
     let (max_freq, disease_id_to_name) = aggregate_rows(rows);
     let per_disease = build_per_disease_maps(max_freq);
     Ok(build_models(per_disease, disease_id_to_name))
@@ -173,15 +192,15 @@ mod tests {
     #[rstest]
     #[case::none_defaults_to_obligate(None, 1.0)]
     #[case::excluded_term_id_is_zero(
-        Some(oboannotation::hpo::Frequency::TermId(tid("HP:0040285"))),
+        Some(oboannotation::hpo::FrequencyData::TermId(tid("HP:0040285"))),
         0.0
     )]
     #[case::other_term_id_is_present(
-        Some(oboannotation::hpo::Frequency::TermId(tid("HP:0040283"))), // e.g. "Occasional"
+        Some(oboannotation::hpo::FrequencyData::TermId(tid("HP:0040283"))), // e.g. "Occasional"
         1.0
     )]
-    #[case::explicit_frequency_passthrough(Some(oboannotation::hpo::Frequency::Frequency(0.42)), 0.42)]
-    fn test_frequency_to_f64_simple_cases(#[case] input: Option<oboannotation::hpo::Frequency>, #[case] expected: f64) {
+    #[case::explicit_frequency_passthrough(Some(oboannotation::hpo::FrequencyData::Percentage(42.0)), 0.42)]
+    fn test_frequency_to_f64_simple_cases(#[case] input: Option<oboannotation::hpo::FrequencyData>, #[case] expected: f64) {
         assert_eq!(frequency_to_f64(input), expected);
     }
 
@@ -196,7 +215,7 @@ mod tests {
         #[case] denominator: u32,
         #[case] expected: f64,
     ) {
-        let result = frequency_to_f64(Some(oboannotation::hpo::Frequency::Ratio { numerator, denominator }));
+        let result = frequency_to_f64(Some(oboannotation::hpo::FrequencyData::Ratio { n:numerator, m:denominator }));
         assert!(
             (result - expected).abs() < 1e-9,
             "expected {expected}, got {result}"
@@ -210,13 +229,9 @@ mod tests {
 
     #[rstest]
     fn test_frequency_to_f64_ratio_zero_denominator_no_panic() {
-        let result = frequency_to_f64(Some(oboannotation::hpo::Frequency::Ratio { numerator: 3, denominator: 0 }));
+        let result = frequency_to_f64(Some(oboannotation::hpo::FrequencyData::Ratio { n: 3, m: 0 }));
         assert_eq!(result, 0.0);
     }
-
-    // --- aggregate_rows ---
-
-
 
 
 

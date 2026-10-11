@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "phenoblendtk",
-  "version": "0.3.26",
+  "version": "0.3.27",
   "identifier": "org.p2gx.phenoblendtk",
   "build": {
     "beforeDevCommand": "npx nx serve phenoblendtk --configuration=development  --no-cloud",

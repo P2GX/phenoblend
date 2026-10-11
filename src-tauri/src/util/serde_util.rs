@@ -187,11 +187,12 @@ use super::*;
 
     #[test]
     fn rejects_malformed_term_id_in_map_key() {
+        // the frequency CURIE is not valid
         let bad_json = r#"{
             "omimDiseaseId": "OMIM:162200",
             "omimDiseaseName": "NF1",
             "observedHpoIds": ["HP:0009737"],
-            "termFrequencies": {"NOT_A_TERM_ID": 0.5},
+            "termFrequencies": {"NOT A VALID TERM ID": 0.5},
             "excludedHpoIds": []
         }"#;
         let result: Result<SimpleDiseaseModel, _> = serde_json::from_str(bad_json);
