@@ -44,13 +44,16 @@ export class NewCaseComponent {
     this.isProcessing.set(true);
     this.statusMessage.set('Parsing phenopacket payload in Rust engine...');
     this.errorDetails.set(null);
+    console.log("processPPktingest")
     try { 
       await this.configService.ingestPhenopacket(payload);
       const hpoCount = await this.configService.getObservedHpoCount();
+        console.log("hpoCount", hpoCount)
       this.notificationService.showSuccess(`Phenopacket input with ${hpoCount} observed HPO teams.`); 
       this.proceedToNextWindow(hpoCount);
     } catch (error) {
       this.notificationService.showError('Ingestion failed.');
+       console.log("Ingestion failed", error)
     } finally {
       this.isProcessing.set(false);
     }

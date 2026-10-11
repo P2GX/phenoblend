@@ -25,7 +25,7 @@ export class ConfigService {
   }
 
   async ingestPhenopacket(ppkt: string): Promise<void> {
-    return await invoke("ingest_phenopacket", {'ppkt': ppkt});
+    return await invoke("ingest_phenopacket", {'ppktString': ppkt});
   }
 
   async getOverlapPlotData(annotationMap: Record<string, GeneDiseaseAssociation[]>): Promise<PresenceMatrixPayload> {
