@@ -4,6 +4,7 @@ import { NewCaseComponent } from './newppkt/newppkt.component';
 import { PhenotypeProfileVisualizerComponent } from './visualize/visualize.component';
 import { GeneDiseaseComponent } from './util/genedisease/genedisease.component';
 import { HelpComponent } from './help/help.component';
+import { NotebookComponent } from './notebook/notebook.component';
 
 
 export const appRoutes: Routes = [
@@ -12,6 +13,7 @@ export const appRoutes: Routes = [
   { path: 'newppkt', component: NewCaseComponent },
   { path: 'visualize', component: PhenotypeProfileVisualizerComponent },
   { path: 'genedisease', component: GeneDiseaseComponent },
+  { path: 'notebook', component: NotebookComponent},
   { path: 'help', component: HelpComponent },
   
   

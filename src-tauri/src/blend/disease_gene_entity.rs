@@ -1,17 +1,28 @@
 use std::{collections::{HashMap, HashSet},  sync::Arc};
 
 use ontolius::{TermId, ontology::{TaxonomyQuery, OntologyTerms, csr::FullCsrOntology}, term::MinimalTerm};
+use serde::{Serialize, Serializer};
 use crate::{blend::dto::{OverlapPlotItem, OverlapPlotPayload, SpreadPlotPayload, UpsetPlotPayload}, hpoa::disease_model::GeneDiseaseAssociation, model::{proband::Proband, simple_term::SimpleOntologyTerm}};
 use log::{trace};
+
+fn serialize_term_id_set<S>(ids: &HashSet<TermId>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let mut strs: Vec<String> = ids.iter().map(|t| t.to_string()).collect();
+    strs.sort(); // HashSet iteration order is random; sort for stable output
+    strs.serialize(serializer)
+}
 
 /// This is the structure we use for the phenoblend analysis. We have one such entity for each gene, and the entities can have one or more diseases associated with the gene
 /// disease_hpo_ids then has all the observed HPO identifiers for all of the diseases
 /// individual_explicit_ids has all of the explicit annotations from the phenopacket/case we are analyzing.
-#[derive(Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct GeneDiseaseEntity {
     pub ncbi_gene_id: String,
     pub gene_symbol: String,
     pub disease_list: Vec<SimpleOntologyTerm>,
+    #[serde(serialize_with = "serialize_term_id_set")]
     pub(crate) disease_hpo_ids: HashSet<TermId> 
 }
 

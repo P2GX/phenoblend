@@ -13,7 +13,8 @@ export class NavbarComponent implements OnInit{
     { label: 'Home', path: '/home' },
     { label: 'Load HPO data', path: '/newppkt' },
     { label: 'Gene/Disease data', path: '/genedisease' },
-    { label: 'Visualize', path: '/visualize'}
+    { label: 'Visualize', path: '/visualize'},
+    { label: 'Notebook', path: '/notebook'}
   ];
 
   ngOnInit() {

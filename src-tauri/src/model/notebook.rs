@@ -7,7 +7,14 @@ use uuid::Uuid;
 
 use crate::{blend::disease_gene_entity::GeneDiseaseEntity, model::simple_term::SimpleOntologyTerm};
 use std::time::{SystemTime, UNIX_EPOCH};
+use serde::Serialize;
+use tauri::{AppHandle, Emitter, State};
+use std::sync::Mutex;
 
+pub const NOTEBOOK_EVENT: &str = "notebook-updated";
+
+
+#[derive(Serialize, Clone, Debug)]
 pub struct Notebook {
     pub id: String,
     pub timestamp: u64,
@@ -16,6 +23,10 @@ pub struct Notebook {
     pub gene_disease_list: Vec<GeneDiseaseEntity>,
 }
 
+
+pub fn emit_notebook(app: &AppHandle, notebook: &Notebook) -> Result<(), String> {
+    app.emit(NOTEBOOK_EVENT, notebook).map_err(|e| e.to_string())
+}
 
 impl Notebook {
     fn new(observed_hpo: Vec<SimpleOntologyTerm>, data_input_history: String) -> Self {
@@ -42,4 +53,6 @@ impl Notebook {
         let data_input_history = "HPO data entered manually.".to_string();
         Notebook::new(observed_hpo, data_input_history)
     }
+
+ 
 }

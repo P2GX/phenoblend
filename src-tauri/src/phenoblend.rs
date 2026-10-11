@@ -392,6 +392,17 @@ impl PhenoblendSingleton {
         Ok(results)
     }
 
+     pub(crate) fn notebook_ref(&self) -> Result<&Notebook, String> {
+        self.notebook
+            .as_ref()
+            .ok_or_else(|| "No notebook available yet".to_string())
+    }
+
+    pub(crate) fn notebook_mut(&mut self) -> Result<&mut Notebook, String> {
+        self.notebook
+            .as_mut()
+            .ok_or_else(|| "No notebook available yet".to_string())
+    }
 
 }
 

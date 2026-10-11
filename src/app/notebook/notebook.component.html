@@ -1,0 +1,26 @@
+<!-- notebook.component.html -->
+@if (notebook(); as nb) {
+  <section class="notebook">
+    <header>
+      <h2>Notebook {{ nb.id }}</h2>
+      <small>Last updated {{ updatedAt() | date: 'medium' }}</small>
+    </header>
+
+    <h3>Observed phenotypes ({{ nb.observedHpo.length }})</h3>
+    <ul>
+      @for (term of nb.observedHpo; track term.term_id) {
+        <li><code>{{ term.term_id }}</code> {{ term.term_label }}</li>
+      } @empty {
+        <li>No observed HPO terms yet.</li>
+      }
+    </ul>
+
+    <h3>Gene–disease entries ({{ nb.geneDiseaseList.length }})</h3>
+    
+
+    <h3>Input history</h3>
+    <pre>{{ nb.dataInputHistory }}</pre>
+  </section>
+} @else {
+  <p>No notebook loaded.</p>
+}

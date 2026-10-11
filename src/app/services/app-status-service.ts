@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { NotificationService, OntologyLoadEvent } from 'ng-hpo-uikit';
 import { WritableSignal } from '@angular/core';
 import { InitializationStatusDto } from '../models/status_dto'; 
+import { initialNotebook, Notebook } from '../models/notebook';
 
 
 @Injectable({ providedIn: 'root' })
@@ -29,9 +30,12 @@ export class AppStatusService {
   errorMessage = signal<string>('');
   hasError = computed(() => !!this.errorMessage());
 
+  readonly notebook = signal<Notebook | null>(null);
+
   constructor() {
     this.setupListeners().then(() => {
       this.fetchPreloadedStatus();
+      this.registerNotebook();
     });
   }
 
@@ -68,6 +72,22 @@ export class AppStatusService {
     });
   }
 
+
+
+
+private async registerNotebook(): Promise<void> {
+   await listen<Notebook>('notebook-updated', (event) => {
+      this.ngZone.run(() => this.notebook.set(event.payload));
+    });
+    try {
+      const initial = initialNotebook();
+      if (this.notebook() === null) {
+        this.ngZone.run(() => this.notebook.set(initial));
+      }
+    } catch (err) {
+      console.error('Failed to fetch initial notebook:', err);
+    }
+}
 
 
 /**

@@ -28,8 +28,10 @@ use phenopackets::schema::v2::Phenopacket;
 use crate::blend::dto::UpsetPlotPayload;
 use crate::blend::dto::SpreadPlotPayload;
 use crate::enrichment::dto::DuoEnrichmentSummary;
+use crate::model::notebook::Notebook;
 use crate::{blend::dto::OverlapPlotPayload, phenoblend::PhenoblendSingleton};
 use crate::model::status::InitializationStatusDto;
+use crate::model::notebook::emit_notebook;
 use crate::hpoa::disease_model::GeneDiseaseAssociation;
 use tauri_plugin_log::{Target, TargetKind};
 use log::{trace, debug, info, warn, error};
@@ -107,28 +109,24 @@ pub fn run() {
 fn ingest_phenopacket(
     app: AppHandle,
     state: tauri::State<'_, Arc<AppState>>,
-    ppkt: String
+    ppkt_string: String
 ) -> Result<(), String> {
-    let state_handle = state.inner().clone();
-    let mut singleton = state_handle.phenoblendtk.lock().unwrap();
-    let _ = app.emit("ppkt-load-event", OntologyLoadEvent::loading());
-    let mut json_value: serde_json::Value = serde_json::from_str(&ppkt)
-        .map_err(|e| format!("Invalid JSON syntax structure: {}", e))?;
-    // 2. Safely inject the missing field into the vitalStatus block if it exists
-    if let Some(subject) = json_value.get_mut("subject") {
-        if let Some(vital_status) = subject.get_mut("vitalStatus") {
-            if vital_status.get("survivalTimeInDays").is_none() {
-                // Insert a fallback integer value to satisfy the strict parser
-                vital_status["survivalTimeInDays"] = serde_json::Value::from(0);
-            }
-        }
-    }
+    let result: Result<Notebook, String> = (|| {
+        let mut singleton = state.phenoblendtk.lock().map_err(|e|e.to_string())?;
+        let phenopacket = crate::hpo::ppkt_loader::load_from_json(&ppkt_string)?;
+        singleton.ingest_ppkt(phenopacket)?;
+        Ok(singleton.notebook_ref()?.clone())
+    })();
 
-    // 3. Now convert the sanitized JSON value into the official Phenopacket type
-    let phenopacket: Phenopacket = serde_json::from_value(json_value)
-        .map_err(|e| format!("Phenopacket Schema validation error: {}", e))?;
-    singleton.ingest_ppkt(phenopacket)?;
-    Ok(())
+    match result {
+        Ok(snapshot) => {
+            if let Err(e) = emit_notebook(&app, &snapshot) {
+                log::error!("Failed to emit notebook: {e}");
+            }
+            Ok(())
+        },
+        Err(e) => {Err(e)},
+    }
 }
 
 
