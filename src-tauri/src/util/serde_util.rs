@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use ontolius::TermId;
 use serde::ser::SerializeMap;
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serializer};
 use serde::de::{Error, MapAccess};
 use serde::de::{Deserializer, SeqAccess, Visitor};
 use std::fmt;

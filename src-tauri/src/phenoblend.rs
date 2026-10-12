@@ -302,7 +302,7 @@ impl PhenoblendSingleton {
                     m.disease_model = Some(simple_disease.clone());
                 }
                 None => {
-                    m.disease_model = Some(SimpleDiseaseModel::from_id(m.disease_id.clone()));
+                    m.disease_model = Some(SimpleDiseaseModel::fallback_from_id(m.disease_id.clone()));
                 }
             }
         }
@@ -402,6 +402,14 @@ impl PhenoblendSingleton {
         self.notebook
             .as_mut()
             .ok_or_else(|| "No notebook available yet".to_string())
+    }
+
+    pub(crate) fn  initialize_notebook(
+        &mut self,
+        gda_list: HashMap<String, Vec<GeneDiseaseAssociation>>) -> Result<(), String> {
+            todo!();
+
+        Ok(())
     }
 
 }

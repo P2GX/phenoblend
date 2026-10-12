@@ -8,13 +8,14 @@ use uuid::Uuid;
 use crate::{blend::disease_gene_entity::GeneDiseaseEntity, model::simple_term::SimpleOntologyTerm};
 use std::time::{SystemTime, UNIX_EPOCH};
 use serde::Serialize;
-use tauri::{AppHandle, Emitter, State};
-use std::sync::Mutex;
+use tauri::{AppHandle, Emitter};
+
 
 pub const NOTEBOOK_EVENT: &str = "notebook-updated";
 
 
 #[derive(Serialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Notebook {
     pub id: String,
     pub timestamp: u64,
@@ -25,6 +26,7 @@ pub struct Notebook {
 
 
 pub fn emit_notebook(app: &AppHandle, notebook: &Notebook) -> Result<(), String> {
+    eprintln!("emit notebook no={:?}", notebook);
     app.emit(NOTEBOOK_EVENT, notebook).map_err(|e| e.to_string())
 }
 

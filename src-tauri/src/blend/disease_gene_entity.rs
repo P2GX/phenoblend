@@ -18,6 +18,7 @@ where
 /// disease_hpo_ids then has all the observed HPO identifiers for all of the diseases
 /// individual_explicit_ids has all of the explicit annotations from the phenopacket/case we are analyzing.
 #[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GeneDiseaseEntity {
     pub ncbi_gene_id: String,
     pub gene_symbol: String,

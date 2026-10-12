@@ -1,5 +1,6 @@
-<!-- notebook.component.html -->
+
 @if (notebook(); as nb) {
+    <pre>{{ nb | json }}</pre>
   <section class="notebook">
     <header>
       <h2>Notebook {{ nb.id }}</h2>
@@ -8,8 +9,8 @@
 
     <h3>Observed phenotypes ({{ nb.observedHpo.length }})</h3>
     <ul>
-      @for (term of nb.observedHpo; track term.term_id) {
-        <li><code>{{ term.term_id }}</code> {{ term.term_label }}</li>
+      @for (term of nb.observedHpo; track term.termId) {
+        <li><code>{{ term.termId }}</code> {{ term.termLabel }}</li>
       } @empty {
         <li>No observed HPO terms yet.</li>
       }
@@ -21,6 +22,13 @@
     <h3>Input history</h3>
     <pre>{{ nb.dataInputHistory }}</pre>
   </section>
+    @if (nb.observedHpo.length; as n) {
+        <p>Observed HPO terms: n={{n}}</p>
+    } @else { 
+        <p>No observed HPO terms</p>
+    }
 } @else {
   <p>No notebook loaded.</p>
 }
+
+

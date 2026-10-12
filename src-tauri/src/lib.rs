@@ -23,7 +23,7 @@ use tauri::{AppHandle, Emitter, WindowEvent};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use ga4ghphetools::{pick_file_and_process, load_ontology, OntologyLoadEvent};
-use phenopackets::schema::v2::Phenopacket;
+
 
 use crate::blend::dto::UpsetPlotPayload;
 use crate::blend::dto::SpreadPlotPayload;
@@ -34,7 +34,6 @@ use crate::model::status::InitializationStatusDto;
 use crate::model::notebook::emit_notebook;
 use crate::hpoa::disease_model::GeneDiseaseAssociation;
 use tauri_plugin_log::{Target, TargetKind};
-use log::{trace, debug, info, warn, error};
 
 
 struct AppState {
@@ -82,6 +81,7 @@ pub fn run() {
             get_spread_plot_payload,
             get_upset_plot_payload,
             ingest_phenopacket,
+            initialize_notebook,
             load_hpo,
             load_hpoas,
             load_gene_disease_associations,
@@ -89,7 +89,7 @@ pub fn run() {
             perform_hpo_autocomplete,
             save_svg_file
         ])
-        .setup(|app| {
+        .setup(|_app| {
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -117,7 +117,7 @@ fn ingest_phenopacket(
         singleton.ingest_ppkt(phenopacket)?;
         Ok(singleton.notebook_ref()?.clone())
     })();
-
+    eprintln!("result={:?}", result);
     match result {
         Ok(snapshot) => {
             if let Err(e) = emit_notebook(&app, &snapshot) {
@@ -242,7 +242,7 @@ fn get_upset_plot_payload(
     annotations: HashMap<String, Vec<GeneDiseaseAssociation>>
 ) -> Result<UpsetPlotPayload, String> {
      let state_handle = state.inner().clone();
-    let mut singleton = state_handle.phenoblendtk.lock().map_err(|e| e.to_string())?;
+    let singleton = state_handle.phenoblendtk.lock().map_err(|e| e.to_string())?;
     singleton.get_upset_plot_payload(annotations)
 }
 
@@ -496,4 +496,14 @@ fn analyze_duo_enrichment(
     let state_handle = state.inner().clone();
     let singleton = state_handle.phenoblendtk.lock().map_err(|e| e.to_string())?;
     singleton.get_duo_enrichment_payload(annotations, n_sim.unwrap_or(DEFAULT_N_SIM))
+}
+
+#[tauri::command]
+fn  initialize_notebook(
+    state: tauri::State<'_, Arc<AppState>>,
+    gda_list: HashMap<String, Vec<GeneDiseaseAssociation>>) -> Result<(), String> {
+    let mut singleton = state.phenoblendtk.lock().map_err(|e| e.to_string())?;
+    singleton.initialize_notebook(gda_list)?;
+
+    Ok(())
 }

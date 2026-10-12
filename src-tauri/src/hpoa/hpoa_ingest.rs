@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use log::{trace, warn};
+use log::warn;
 
 use oboannotation::hpo::{FrequencyData, HpoAnnotations};
 use oboannotation::io::AnnotationLoader;
@@ -158,7 +158,7 @@ pub fn load_hpoa_d(fpath_hpoa: &str) -> Result<HashMap<TermId, SimpleDiseaseMode
     let rows: Vec<ParsedRow> = data
         .annotations()
         .into_iter()
-        .filter(|line| line.disease_id.prefix().to_string() != OMIM_PREFIX)
+        .filter(|line| line.disease_id.prefix().to_string() == OMIM_PREFIX)
         .map(|line| {
             let freq: f64 = match &line.frequency {
                 Some(freq) => get_freq_float(freq.data()).map_err(|e|PhenoblendError::parse_error(e))?,

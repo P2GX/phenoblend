@@ -10,7 +10,7 @@ import { PresenceMatrixPayload, SpreadPlotPayload, UpsetPlotPayload } from 'ngx-
   providedIn: 'root'
 })
 export class ConfigService {
- 
+  
 
   async loadHPO(): Promise<void> {
     return await invoke("load_hpo");
@@ -103,25 +103,30 @@ export class ConfigService {
   }
 
   /**
- * Runs the duo-enrichment test for every pairwise combination of genes
- * present in `annotations`. Observed HPO terms and the ontology are read
- * from the backend singleton; only the candidate gene/disease annotations
- * and (optionally) the Monte Carlo sample size need to be supplied.
- *
- * @param annotations gene symbol -> its GeneDiseaseAssociation list
- * @param nSim        Monte Carlo draws for the FREQUENCY null (backend
- *                    defaults to 100_000 if omitted; consider passing a
- *                    smaller value, e.g. 5_000-10_000, for snappier
- *                    interactive use)
- */
-async analyzeDuoEnrichment(
-  annotations: GeneDiseaseAnnotations,
-  nSim?: number,
-): Promise<DuoEnrichmentSummary[]> {
-  return invoke<DuoEnrichmentSummary[]>('analyze_duo_enrichment', {
-    annotations,
-    nSim,
-  });
-}
+   * Runs the duo-enrichment test for every pairwise combination of genes
+   * present in `annotations`. Observed HPO terms and the ontology are read
+   * from the backend singleton; only the candidate gene/disease annotations
+   * and (optionally) the Monte Carlo sample size need to be supplied.
+   *
+   * @param annotations gene symbol -> its GeneDiseaseAssociation list
+   * @param nSim        Monte Carlo draws for the FREQUENCY null (backend
+   *                    defaults to 100_000 if omitted; consider passing a
+   *                    smaller value, e.g. 5_000-10_000, for snappier
+   *                    interactive use)
+   */
+  async analyzeDuoEnrichment(
+    annotations: GeneDiseaseAnnotations,
+    nSim?: number,
+  ): Promise<DuoEnrichmentSummary[]> {
+    return invoke<DuoEnrichmentSummary[]>('analyze_duo_enrichment', {
+      annotations,
+      nSim,
+    });
+  }
+
+  async initializeNotebook(byGene: Map<string, GeneDiseaseAssociation[]>): Promise<void> {
+      return invoke<void>('initialize_notebook', {gdaList: Object.fromEntries(byGene) })
+  }
+ 
   
 }

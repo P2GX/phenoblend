@@ -6,6 +6,7 @@ import { GeneDiseaseAssociation } from '../../models/interfaces';
 import { AnnotationService } from '../../services/annotation-service';
 import { Router } from '@angular/router';
 import { IconComponent, NotificationService } from 'ng-hpo-uikit';
+import { ConfigService } from '../../services/config-service';
 
 
 interface GeneEntry {
@@ -23,14 +24,14 @@ interface GeneEntry {
 })
 export class GeneDiseaseComponent {
   private readonly annotationService = inject(AnnotationService);
+  private configService = inject(ConfigService);
   private readonly router = inject(Router);
   private readonly notificationService = inject(NotificationService);
 
   protected control = new FormControl<string>('', { nonNullable: true });
-
-  // Combobox open/close + keyboard-highlight state — replaces mat-autocomplete's internal panel state.
   protected isOpen = signal(false);
   protected highlightedIndex = signal(-1);
+  protected geneEntries = signal<GeneEntry[]>([]);
   private inputEl = viewChild.required<ElementRef<HTMLInputElement>>('geneInput');
 
   protected readonly genesWithSelections = computed(() =>
@@ -75,7 +76,7 @@ export class GeneDiseaseComponent {
     return symbols;
   });
 
-  protected geneEntries = signal<GeneEntry[]>([]);
+ 
 
   protected onFocus(): void {
     this.isOpen.set(true);
@@ -186,13 +187,14 @@ export class GeneDiseaseComponent {
     const byGene = new Map<string, GeneDiseaseAssociation[]>();
 
     for (const entry of this.geneEntries()) {
-      const chosen = entry.associations.filter(a => entry.selectedDiseaseIds.has(a.diseaseId));
+      const chosen : GeneDiseaseAssociation[] = entry.associations.filter(a => entry.selectedDiseaseIds.has(a.diseaseId));
       if (chosen.length > 0) {
         byGene.set(entry.geneSymbol, chosen);
       }
     }
 
     this.annotationService.setSelectedAssociations(byGene);
+    this.configService.initializeNotebook(byGene);
     this.router.navigate(['/visualize']);
   }
 }

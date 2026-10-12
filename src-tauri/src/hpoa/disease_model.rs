@@ -1,5 +1,5 @@
 use std::collections::{HashMap, HashSet};
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use ontolius::{Identified, TermId};
 use crate::util::serde_util::*;
 
@@ -45,10 +45,11 @@ impl SimpleDiseaseModel {
     }
 
     /// Fall back in case we cannot find the disease model, which should never happen
-    pub fn from_id(omim_disease_id: TermId) -> Self {
+    pub fn fallback_from_id(omim_disease_id: TermId) -> Self {
+        let msg = format!("Could not find disease model for '{}'.", omim_disease_id.to_string());
         Self { 
             omim_disease_id, 
-            omim_disease_name: "Could not find disease model".to_string(), 
+            omim_disease_name: msg, 
             observed_hpo_ids: HashSet::default(), 
             term_frequencies: HashMap::default(),
             excluded_hpo_ids: HashSet::default() 

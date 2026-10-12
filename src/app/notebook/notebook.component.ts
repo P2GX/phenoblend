@@ -1,12 +1,12 @@
 // notebook.component.ts
 import { Component, computed, inject } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { DatePipe, JsonPipe } from '@angular/common';
 import { AppStatusService } from '../services/app-status-service';
 
 @Component({
   selector: 'app-notebook',
   standalone: true,
-  imports: [DatePipe],
+  imports: [DatePipe, JsonPipe],
   templateUrl: './notebook.component.html',
   styleUrls: ['./notebook.component.scss'],
 })

@@ -1,7 +1,7 @@
 // notebook.model.ts
 export interface SimpleOntologyTerm {
-  term_id: string;
-  term_label: string;
+  termId: string;
+  termLabel: string;
 }
 
 export interface GeneDiseaseEntity {

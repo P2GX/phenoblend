@@ -4,6 +4,7 @@ use serde::{Serialize, Serializer};
 
 
 #[derive(Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct SimpleOntologyTerm {
      #[serde(serialize_with = "serialize_term_id")]
     pub term_id: TermId,
