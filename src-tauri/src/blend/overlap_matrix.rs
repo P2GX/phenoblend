@@ -11,16 +11,36 @@ use crate::model::proband::Proband;
 
 
 
-/// Converts raw gene->GDA mappings into clean entities (order not significant here).
+/// Builds one [`GeneDiseaseEntity`] per gene from the gene-symbol-keyed association map.
+///
+/// Each value in `annotation_map` (all associations for a single gene) is passed to
+/// [`GeneDiseaseEntity::new`]. The map keys are used only to order the output and to
+/// label errors; the entities take their gene information from the associations.
+///
+/// The result is sorted by map key (gene symbol), so repeated calls on the same input
+/// give the same order. This matters because the list ends up in the notebook that is
+/// re-emitted to the frontend, and `HashMap` iteration order would otherwise vary
+/// between runs.
+///
+/// # Errors
+///
+/// Returns the first error produced by [`GeneDiseaseEntity::new`], prefixed with the
+/// gene symbol it occurred for. No partial list is returned.
 fn build_entity_list(
     annotation_map: &HashMap<String, Vec<GeneDiseaseAssociation>>,
 ) -> Result<Vec<GeneDiseaseEntity>, String> {
-    let mut gd_entry_list = Vec::new();
-    for gda_list in annotation_map.values() {
-        let gd_entity = GeneDiseaseEntity::new(gda_list)?;
-        gd_entry_list.push(gd_entity);
-    }
-    Ok(gd_entry_list)
+    // transform the k+v pairs of the map into entries of a Vec
+    let mut genes: Vec<_> = annotation_map.iter().collect();
+    // sort by first entry, i.e., gene symbols
+    genes.sort_unstable_by(|a, b| a.0.cmp(b.0));
+    // GeneDiseaseEntity::new produces a Result<GeneDiseaseEntity,String>
+    // given the return type, collect creates Result<Vec<GeneDiseaseEntity>, String>
+    genes
+        .into_iter()
+        .map(|(gene, gdas)| {
+            GeneDiseaseEntity::new(gdas).map_err(|e| format!("gene '{gene}': {e}"))
+        })
+        .collect()
 }
 
 pub fn calculate_overlap_matrix(
@@ -38,7 +58,7 @@ pub fn calculate_overlap_matrix(
         &gd_entry_list,
         disease_counts,
         hpo.clone(),
-    );
+    )?;
 
     Ok(payload)
 }

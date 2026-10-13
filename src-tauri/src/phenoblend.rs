@@ -28,8 +28,10 @@ pub struct PhenoblendSingleton {
     pub(crate) hpo: Option<Arc<FullCsrOntology>>,
     pub(crate) omim_disease_models:  Option<HashMap<TermId, SimpleDiseaseModel>>,
     pub(crate) gene_to_disease_d: Option<HashMap<String, Vec<GeneDiseaseAssociation>>>,
-    pub(crate) disease_count_d: HashMap<TermId, usize>,
+    /// Counts of explicit annotations of each HPO term to diseases (ranges from 0 to ca. 9000 and used to calculate similarity)
+    pub(crate) hpo_term_to_disease_count_d: HashMap<TermId, usize>,
     pub(crate) autocompleter: Option<AutoCompleter>,
+    /// Object that records input data and analysis parameters and results for Q/C or downstream use.
     pub(crate) notebook: Option<Notebook>
 }
 
@@ -109,7 +111,7 @@ impl PhenoblendSingleton {
             .clone()
             .ok_or_else(|| "HPO ontology not loaded".to_string())?;
        
-        let simple_observed = crate::hpo::hpo_util::ontolius_to_simple_list(hpo.clone(), &observed_hpo)?;
+        let simple_observed = crate::hpo::hpo_util::ontolius_to_simple_list(hpo.as_ref(), &observed_hpo)?;
         self.init_notebook_from_ppkt(&ppkt.id, &simple_observed);
         Ok(())
     }
@@ -151,7 +153,7 @@ impl PhenoblendSingleton {
             .clone()
             .ok_or_else(|| "HPO ontology not loaded".to_string())?;
        
-        let simple_observed = crate::hpo::hpo_util::ontolius_to_simple_list(hpo.clone(), &observed_tid)?;
+        let simple_observed = crate::hpo::hpo_util::ontolius_to_simple_list(hpo.as_ref(), &observed_tid)?;
         self.init_notebook_from_ner(&simple_observed);
         Ok(())
     }
@@ -167,7 +169,7 @@ impl PhenoblendSingleton {
         let pm = crate::blend::overlap_matrix::calculate_overlap_matrix(
             hpo.clone(), 
             &annotations, 
-            &self.disease_count_d, 
+            &self.hpo_term_to_disease_count_d, 
             proband)?;
         Ok(crate::blend::overlap_matrix::sort_presence_payload(pm))
     }
@@ -218,14 +220,14 @@ impl PhenoblendSingleton {
                     }
                 }
             }
-            self.disease_count_d = disease_counts;
+            self.hpo_term_to_disease_count_d = disease_counts;
             Ok(())
         }
         
 
 
     pub fn disease_count(&self, term_id: &TermId) -> usize {
-        self.disease_count_d
+        self.hpo_term_to_disease_count_d
             .get(term_id)
             .copied()
             .unwrap_or(0)
@@ -440,7 +442,7 @@ impl Default for PhenoblendSingleton {
             hpo: None,
             omim_disease_models: None,
             gene_to_disease_d: None,
-            disease_count_d: HashMap::new(),
+            hpo_term_to_disease_count_d: HashMap::new(),
             autocompleter: None,
             notebook: None
         };

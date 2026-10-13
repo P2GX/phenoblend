@@ -1,12 +1,12 @@
 
 use ontolius::TermId;
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::Error as _; // brings `custom` into scope without taking the name `Error`
 
-
-#[derive(Serialize, Debug, Clone)]
+#[derive(Deserialize,Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SimpleOntologyTerm {
-     #[serde(serialize_with = "serialize_term_id")]
+     #[serde(serialize_with = "serialize_term_id", deserialize_with="deserialize_term_id")]
     pub term_id: TermId,
     pub term_label: String
 }
@@ -18,6 +18,15 @@ where
 {
     serializer.serialize_str(&term_id.to_string())
 }
+
+fn deserialize_term_id<'de, D>(deserializer: D) -> Result<TermId, D::Error>
+where
+    D: Deserializer<'de>, {
+    let s = String::deserialize(deserializer)?;   // read the JSON string first
+    s.parse::<TermId>()  // the last expression is the return value
+        .map_err(|e| D::Error::custom(format!("Failed to parse TermId from '{s}': {e}")))
+}
+
 
 impl SimpleOntologyTerm {
     pub fn new(tid: impl Into<String>, label: impl Into<String>) -> Result<Self, String> {
@@ -98,8 +107,8 @@ mod tests {
     fn serializes_term_id_as_curie_string() {
         let t = SimpleOntologyTerm::new("HP:0001250", "Seizure").unwrap();
         let v = serde_json::to_value(&t).unwrap();
-        assert_eq!(v["term_id"], "HP:0001250");
-        assert_eq!(v["term_label"], "Seizure");
+        assert_eq!(v["termId"], "HP:0001250");
+        assert_eq!(v["termLabel"], "Seizure");
         // exactly two fields, so the frontend contract doesn't silently change
         assert_eq!(v.as_object().unwrap().len(), 2);
     }
@@ -113,7 +122,7 @@ mod tests {
         let json = serde_json::to_string(&terms).unwrap();
         assert_eq!(
             json,
-            r#"[{"term_id":"HP:0001250","term_label":"Seizure"},{"term_id":"HP:0000118","term_label":"Phenotypic abnormality"}]"#
+            r#"[{"termId":"HP:0001250","termLabel":"Seizure"},{"termId":"HP:0000118","termLabel":"Phenotypic abnormality"}]"#
         );
     }
 }
