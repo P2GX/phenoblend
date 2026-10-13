@@ -109,7 +109,7 @@ pub fn partial_match_score(
 
 /// Create a SimpleTerm from a TermId. This should never fail because we are retrieving terms that we know are in the Ontology,
 /// but if for some reason it does fail, log it and return the Root.
-fn simple_term(hpo: &FullCsrOntology, tid: &TermId) -> SimpleOntologyTerm {
+pub fn simple_term(hpo: &FullCsrOntology, tid: &TermId) -> SimpleOntologyTerm {
     ontolius_to_simple(hpo, tid).unwrap_or_else(|e| {
         log::error!("{e}; substituting root term {}", *ROOT_PHENOTYPE_TERM_ID);
         SIMPLE_ROOT_TERM.clone()

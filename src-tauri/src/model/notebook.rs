@@ -5,7 +5,7 @@
 
 use uuid::Uuid;
 
-use crate::{blend::disease_gene_entity::GeneDiseaseEntity, model::simple_term::SimpleOntologyTerm};
+use crate::{blend::{disease_gene_entity::GeneDiseaseEntity, dto::CohortAnalysis}, model::simple_term::SimpleOntologyTerm};
 use std::time::{SystemTime, UNIX_EPOCH};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
@@ -22,6 +22,8 @@ pub struct Notebook {
     pub observed_hpo: Vec<SimpleOntologyTerm>,
     pub data_input_history: String,
     pub gene_disease_list: Vec<GeneDiseaseEntity>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub analysis: Option<CohortAnalysis>
 }
 
 
@@ -42,7 +44,8 @@ impl Notebook {
             timestamp,
             observed_hpo,
             data_input_history,
-            gene_disease_list: Vec::default()
+            gene_disease_list: Vec::default(),
+            analysis: None
         }
     }
 

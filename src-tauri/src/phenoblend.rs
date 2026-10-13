@@ -11,7 +11,8 @@ use rand::SeedableRng;
 use rand::rngs::StdRng;
 
 
-use crate::blend::dto::{SpreadPlotPayload, UpsetPlotPayload};
+use crate::blend::disease_gene_entity::GeneDiseaseEntity;
+use crate::blend::dto::{CohortAnalysis, SpreadPlotPayload, UpsetPlotPayload};
 use crate::enrichment::dto::DuoEnrichmentSummary;
 use crate::enrichment::gdannotation_source::{GeneDiseaseAnnotationSource, OntoliusDescendants};
 use crate::enrichment::melded_ppkt::MeldedPpkt;
@@ -406,11 +407,58 @@ impl PhenoblendSingleton {
             .ok_or_else(|| "No notebook available yet".to_string())
     }
 
-    pub(crate) fn  initialize_notebook(
-        &mut self,
-        gda_list: HashMap<String, Vec<GeneDiseaseAssociation>>) -> Result<(), String> {
-            todo!();
 
+    /// Runs the full analysis for the notebook's current observed terms against `entities`.
+    ///
+    /// Read-only: returns the result without touching `self`, so a failure leaves the
+    /// notebook as it was. Requires the ontology and the disease counts to be loaded.
+    fn run_analysis(&self, entities: &[GeneDiseaseEntity]) -> Result<CohortAnalysis, String> {
+        let hpo = self.get_hpo().ok_or("Could not get ontology".to_string())?; // Arc<FullCsrOntology>; adapt if get_hpo still returns Option
+        let observed: Vec<TermId> = self
+            .notebook_ref()?
+            .observed_hpo
+            .iter()
+            .map(|t| t.term_id.clone())
+            .collect();
+
+        let term_matches =
+            crate::blend::disease_gene_entity::compute_term_matches(&self.individual, entities, &self.hpo_term_to_disease_count_d, hpo.as_ref())?;
+        let overlap = OverlapPlotPayload::from_term_matches(
+            entities.iter().map(|g| g.gene_symbol.clone()),
+            &term_matches,
+        );
+        let gene_annotations = entities
+            .iter()
+            .map(|g| {
+                let mut ids: Vec<&TermId> = g.disease_hpo_ids.iter().collect();
+                ids.sort_by_key(|t| t.to_string());
+                let terms = ids.into_iter().map(|t| crate::blend::disease_gene_entity::simple_term(hpo.as_ref(), t)).collect();
+                (g.gene_symbol.clone(), terms)
+            })
+            .collect();
+
+        Ok(CohortAnalysis { term_matches, gene_annotations, overlap })
+    }
+
+    /// Builds the gene-disease entities, runs the analysis, and stores both in the notebook.
+    ///
+    /// The disease counts are recalculated first so they always reflect the loaded
+    /// disease models. If any step fails, the notebook is left unchanged.
+    ///
+    /// # Errors
+    /// Fails if the ontology or disease models are not loaded, if there is no notebook,
+    /// or if an entity or match cannot be built.
+    pub(crate) fn initialize_notebook(
+        &mut self,
+        gda_list: HashMap<String, Vec<GeneDiseaseAssociation>>,
+    ) -> Result<(), String> {
+        let hpo = self.get_hpo().ok_or("Could not retrieve HPO".to_string())?;
+       // self.calculate_disease_counts(hpo.as_ref())?;
+        let entities = crate::blend::overlap_matrix::build_entity_list(&gda_list)?;
+        let analysis = self.run_analysis(&entities)?;   // may fail: nothing changed yet
+        let nb = self.notebook_mut()?;
+        nb.gene_disease_list = entities;
+        nb.analysis = Some(analysis);
         Ok(())
     }
 

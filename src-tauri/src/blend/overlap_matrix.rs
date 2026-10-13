@@ -26,7 +26,7 @@ use crate::model::proband::Proband;
 ///
 /// Returns the first error produced by [`GeneDiseaseEntity::new`], prefixed with the
 /// gene symbol it occurred for. No partial list is returned.
-fn build_entity_list(
+pub fn build_entity_list(
     annotation_map: &HashMap<String, Vec<GeneDiseaseAssociation>>,
 ) -> Result<Vec<GeneDiseaseEntity>, String> {
     // transform the k+v pairs of the map into entries of a Vec

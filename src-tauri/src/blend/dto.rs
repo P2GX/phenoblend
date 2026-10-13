@@ -234,3 +234,18 @@ pub struct SpreadPlotPayload {
     pub series_labels: Vec<String>,
     pub categories: Vec<SpreadPlotCategory>,
 }
+
+
+
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CohortAnalysis {
+    /// Source of truth: how each observed proband term matches each gene entity.
+    pub term_matches: Vec<TermMatches>,
+    /// All annotated terms per gene entity (needed later for the UpSet "annotated" bars).
+    pub gene_annotations: BTreeMap<String, Vec<SimpleOntologyTerm>>,
+    pub overlap: OverlapPlotPayload,
+    // pub upset: UpsetPlotPayload,   // step 2
+    // pub spread: SpreadPlotPayload, // step 2
+}
