@@ -5,7 +5,7 @@
 
 use uuid::Uuid;
 
-use crate::{blend::{disease_gene_entity::GeneDiseaseEntity, dto::CohortAnalysis}, model::simple_term::SimpleOntologyTerm};
+use crate::{blend::{disease_gene_entity::GeneDiseaseEntity, dto::{PhenoBlendAnalysis, UpsetPlotPayload}}, model::simple_term::SimpleOntologyTerm};
 use std::time::{SystemTime, UNIX_EPOCH};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
@@ -23,7 +23,7 @@ pub struct Notebook {
     pub data_input_history: String,
     pub gene_disease_list: Vec<GeneDiseaseEntity>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub analysis: Option<CohortAnalysis>
+    pub analysis: Option<PhenoBlendAnalysis>
 }
 
 
@@ -57,6 +57,13 @@ impl Notebook {
     pub fn from_ner(observed_hpo: Vec<SimpleOntologyTerm>) -> Self {
         let data_input_history = "HPO data entered manually.".to_string();
         Notebook::new(observed_hpo, data_input_history)
+    }
+
+    pub fn upset_payload(&self) -> Result<UpsetPlotPayload, String> {
+        match &self.analysis {
+            Some(a) => a.upset_payload(),
+            None => Err("Analysis object not initialized".to_string()),
+        }
     }
 
  

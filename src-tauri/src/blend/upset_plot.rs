@@ -269,19 +269,7 @@ pub fn build_upset_data(
     Ok(data)
 }
 
-/// The payload the graphic reads.
-///
-/// # Errors
-/// See [`build_upset_data`].
-pub fn build_upset_payload(
-    entities: &[GeneDiseaseEntity],
-    proband: &Proband,
-    hpo: &FullCsrOntology,
-) -> Result<UpsetPlotPayload, String> {
-    let observed: Vec<TermId> = proband.observed_hpos.iter().cloned().collect();
-    let data = build_upset_data(entities, &observed, hpo)?;
-    Ok(UpsetPlotPayload::from_upset_data(&data))
-}
+
 
 impl UpsetPlotPayload {
     /// The counts-only view the graphic reads: `*_annotated` is the full bar height
@@ -296,6 +284,8 @@ impl UpsetPlotPayload {
             combination_observed: d.intersections.iter().map(|i| i.terms.n_observed()).collect(),
         }
     }
+
+  
 }
 
 impl UpsetData {
@@ -368,6 +358,16 @@ impl UpsetData {
             ));
         }
         out
+    }
+
+    /// The payload the graphic reads.
+    ///
+    /// # Errors
+    /// See [`build_upset_data`].
+    pub fn build_upset_payload(
+        &self
+    ) -> Result<UpsetPlotPayload, String> {
+        Ok(UpsetPlotPayload::from_upset_data(self))
     }
 }
 

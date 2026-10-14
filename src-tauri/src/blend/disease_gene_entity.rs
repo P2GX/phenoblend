@@ -260,18 +260,20 @@ impl GeneDiseaseEntity {
             ))
     }
 
-    pub fn get_upset_plot_payload(
+    pub fn get_upset_plot_payloadOLD(
         proband: Proband, 
         gda_map: &HashMap<String, Vec<GeneDiseaseAssociation>>,
         hpo: Arc<FullCsrOntology>
     ) -> Result<UpsetPlotPayload, String> {
 
-        let mut gd_entry_list: Vec<GeneDiseaseEntity> = Vec::new();
+       /* let mut gd_entry_list: Vec<GeneDiseaseEntity> = Vec::new();
         for (symbol, gda_list) in gda_map.into_iter() {
             let gd_entity =   GeneDiseaseEntity::new(gda_list)?;
             gd_entry_list.push(gd_entity);
         }
         Ok(crate::blend::upset_plot::build_upset_payload(&gd_entry_list, &proband, hpo.as_ref())?)
+        */ 
+        Err("Needs refactor".to_ascii_lowercase())
     }
 
 

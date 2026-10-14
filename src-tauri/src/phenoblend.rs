@@ -12,7 +12,7 @@ use rand::rngs::StdRng;
 
 
 use crate::blend::disease_gene_entity::GeneDiseaseEntity;
-use crate::blend::dto::{CohortAnalysis, SpreadPlotPayload, UpsetPlotPayload};
+use crate::blend::dto::{PhenoBlendAnalysis, SpreadPlotPayload, UpsetPlotPayload};
 use crate::enrichment::dto::DuoEnrichmentSummary;
 use crate::enrichment::gdannotation_source::{GeneDiseaseAnnotationSource, OntoliusDescendants};
 use crate::enrichment::melded_ppkt::MeldedPpkt;
@@ -177,18 +177,10 @@ impl PhenoblendSingleton {
 
     pub fn get_upset_plot_payload(
         &self,
-        annotations: HashMap<String, Vec<GeneDiseaseAssociation>>
     )  -> Result<UpsetPlotPayload, String> {
-         let hpo = self.hpo.as_ref()
-            .ok_or_else(|| "Missing required resource: HPO Ontology".to_string())?;
-        
-        let proband = self.individual.clone();
-        let upset = crate::blend::disease_gene_entity::GeneDiseaseEntity::get_upset_plot_payload(
-            proband, 
-            &annotations, 
-            hpo.clone())?;
-
-        Ok(upset)
+        let nb = self.notebook.as_ref().ok_or("Notebook not initialized")?;
+        let ana = nb.analysis.as_ref().ok_or("Analysis not initialized")?;
+        ana.upset_payload()
     }
 
 
@@ -336,7 +328,7 @@ impl PhenoblendSingleton {
                 .map_err(|e| format!("Could not output overlap Excel file: {e}"))?;
             Ok(())
         } else if data_type == "upset" {
-            let payload = self.get_upset_plot_payload(annotations)?;
+            let payload = self.get_upset_plot_payload()?;
             export_upset_plot_to_xlsx(&payload, &path_str)
                 .map_err(|e| format!("Could not output upset Excel file: {e}"))?;
             Ok(())
@@ -412,7 +404,7 @@ impl PhenoblendSingleton {
     ///
     /// Read-only: returns the result without touching `self`, so a failure leaves the
     /// notebook as it was. Requires the ontology and the disease counts to be loaded.
-    fn run_analysis(&self, entities: &[GeneDiseaseEntity]) -> Result<CohortAnalysis, String> {
+    fn run_analysis(&self, entities: &[GeneDiseaseEntity]) -> Result<PhenoBlendAnalysis, String> {
         let hpo = self.get_hpo().ok_or("Could not get ontology".to_string())?; // Arc<FullCsrOntology>; adapt if get_hpo still returns Option
         let observed: Vec<TermId> = self
             .notebook_ref()?
@@ -436,8 +428,8 @@ impl PhenoblendSingleton {
                 (g.gene_symbol.clone(), terms)
             })
             .collect();
-
-        Ok(CohortAnalysis { term_matches, gene_annotations, overlap })
+        let upset = crate::blend::upset_plot::build_upset_data(entities, &observed, hpo.as_ref())?;
+        Ok(PhenoBlendAnalysis { term_matches, gene_annotations, overlap, upset })
     }
 
     /// Builds the gene-disease entities, runs the analysis, and stores both in the notebook.

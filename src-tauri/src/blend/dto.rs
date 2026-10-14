@@ -3,7 +3,7 @@ use ontolius::{TermId, ontology::{OntologyTerms, csr::FullCsrOntology}, term::Mi
 use serde::{Serialize, Deserialize};
 
 use std::collections::BTreeMap;
-use crate::util::serde_util::serialize_term_id_vec;
+use crate::{blend::upset_plot::UpsetData, util::serde_util::serialize_term_id_vec};
 use crate::{blend::dto::MatchType::NoMatch, model::simple_term::SimpleOntologyTerm};
 
 
@@ -263,12 +263,33 @@ pub struct SpreadPlotPayload {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct CohortAnalysis {
+pub struct PhenoBlendAnalysis {
     /// Source of truth: how each observed proband term matches each gene entity.
     pub term_matches: Vec<TermMatches>,
     /// All annotated terms per gene entity (needed later for the UpSet "annotated" bars).
     pub gene_annotations: BTreeMap<String, Vec<SimpleOntologyTerm>>,
     pub overlap: OverlapPlotPayload,
-    // pub upset: UpsetPlotPayload,   // step 2
+    pub upset: UpsetData,   
     // pub spread: SpreadPlotPayload, // step 2
+}
+
+
+impl PhenoBlendAnalysis {
+    pub fn new(
+        term_matches: Vec<TermMatches>,
+        annotations: BTreeMap<String, Vec<SimpleOntologyTerm>>,
+        overlap: OverlapPlotPayload,
+        upset: UpsetData) -> Self {
+            Self { 
+                term_matches, 
+                gene_annotations: annotations, 
+                overlap, 
+                upset 
+            }
+    } 
+
+    pub fn upset_payload(&self) -> Result<UpsetPlotPayload, String> {
+        self.upset.build_upset_payload()
+    }
+
 }

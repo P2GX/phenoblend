@@ -241,9 +241,9 @@ fn get_upset_plot_payload(
     state: tauri::State<'_, Arc<AppState>>,
     annotations: HashMap<String, Vec<GeneDiseaseAssociation>>
 ) -> Result<UpsetPlotPayload, String> {
-     let state_handle = state.inner().clone();
+    let state_handle = state.inner().clone();
     let singleton = state_handle.phenoblendtk.lock().map_err(|e| e.to_string())?;
-    singleton.get_upset_plot_payload(annotations)
+    singleton.get_upset_plot_payload()
 }
 
 #[tauri::command]
