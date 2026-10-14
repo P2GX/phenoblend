@@ -41,7 +41,18 @@ where
     seq.end()
 }
 
-
+pub fn serialize_term_id_vec<S>(term_ids: &[TermId], serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    use serde::ser::SerializeSeq;
+    
+    let mut seq = serializer.serialize_seq(Some(term_ids.len()))?;
+    for id in term_ids {
+        seq.serialize_element(&id.to_string())?;
+    }
+    seq.end()
+}
 
 pub fn deserialize_term_id_set<'de, D>(deserializer: D) -> Result<HashSet<TermId>, D::Error>
 where

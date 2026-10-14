@@ -271,7 +271,7 @@ impl GeneDiseaseEntity {
             let gd_entity =   GeneDiseaseEntity::new(gda_list)?;
             gd_entry_list.push(gd_entity);
         }
-        Ok(crate::blend::upset_plot::build_upset_payload(&gd_entry_list, &proband, hpo.clone()))
+        Ok(crate::blend::upset_plot::build_upset_payload(&gd_entry_list, &proband, hpo.as_ref())?)
     }
 
 

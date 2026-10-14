@@ -3,7 +3,7 @@ use ontolius::{TermId, ontology::{OntologyTerms, csr::FullCsrOntology}, term::Mi
 use serde::{Serialize, Deserialize};
 
 use std::collections::BTreeMap;
-
+use crate::util::serde_util::serialize_term_id_vec;
 use crate::{blend::dto::MatchType::NoMatch, model::simple_term::SimpleOntologyTerm};
 
 
@@ -211,8 +211,31 @@ pub struct UpsetPlotPayload {
     pub gene_observed: Vec<u32>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpsetGene {
+    /// Gene symbol of gene associated with a disease
+    gene_symbol: String,
+    /// HPO terms observed in proband and also associated with gene (explicit only)
+    #[serde(serialize_with = "serialize_term_id_vec")]
+    proband_overlapped_tids: Vec<TermId>,
+    /// HPO Terms annotation to the gene but not reported in the proband (explicit only)
+    #[serde(serialize_with = "serialize_term_id_vec")]
+    remaining_annotated_tids: Vec<TermId>
+}
 
-
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpsetIntersection {
+    /// Gene symbol or symbols for intersection (on vertical of upset plot)
+    gene_symbol_list: Vec<String>,
+     /// HPO terms observed in proband and also associated with gene (explicit only)
+    #[serde(serialize_with = "serialize_term_id_vec")]
+    proband_overlapped_tids: Vec<TermId>,
+    /// HPO Terms annotation to the gene but not reported in the proband (explicit only)
+    #[serde(serialize_with = "serialize_term_id_vec")]
+    remaining_annotated_tids: Vec<TermId>
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
