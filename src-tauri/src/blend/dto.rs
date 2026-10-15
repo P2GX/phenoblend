@@ -170,7 +170,29 @@ impl OverlapPlotPayload {
         self.columns.len()
     }
 
-    /// Derives the overlap graphic's payload from the stored match records.
+   
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct OverlapData {
+     /// Ordered array of gene symbols or diseases following column sorting block rules
+    pub entities: Vec<String>,
+    /// Ordered rows following phenotype grouping tiers
+    pub columns: Vec<TermMatches>,
+}
+
+impl OverlapData {
+    pub fn to_payload(&self) -> OverlapPlotPayload {
+        let overlap_list: Vec<OverlapPlotItem> = self.columns.iter()
+            .map(|entry| entry.to_overlap_item())
+            .collect();
+        OverlapPlotPayload {
+            entities: self.entities.clone(),
+            columns: overlap_list
+        }
+    }
+
+     /// Derives the overlap graphic's payload from the stored match records.
     ///
     /// `entities` is the sorted, de-duplicated list of gene symbols; `columns` has one
     /// entry per record, in the same order.
@@ -183,7 +205,7 @@ impl OverlapPlotPayload {
         entities.dedup();
         Self {
             entities,
-            columns: term_matches.iter().map(TermMatches::to_overlap_item).collect(),
+            columns: term_matches.to_vec(),
         }
     }
 }
@@ -268,9 +290,9 @@ pub struct PhenoBlendAnalysis {
     pub term_matches: Vec<TermMatches>,
     /// All annotated terms per gene entity (needed later for the UpSet "annotated" bars).
     pub gene_annotations: BTreeMap<String, Vec<SimpleOntologyTerm>>,
-    pub overlap: OverlapPlotPayload,
+    pub overlap: OverlapData,
     pub upset: UpsetData,   
-    // pub spread: SpreadPlotPayload, // step 2
+    pub spread: SpreadPlotPayload, 
 }
 
 
@@ -278,18 +300,24 @@ impl PhenoBlendAnalysis {
     pub fn new(
         term_matches: Vec<TermMatches>,
         annotations: BTreeMap<String, Vec<SimpleOntologyTerm>>,
-        overlap: OverlapPlotPayload,
-        upset: UpsetData) -> Self {
+        overlap: OverlapData,
+        upset: UpsetData,
+        spread: SpreadPlotPayload) -> Self {
             Self { 
                 term_matches, 
                 gene_annotations: annotations, 
                 overlap, 
-                upset 
+                upset,
+                spread
             }
     } 
 
     pub fn upset_payload(&self) -> Result<UpsetPlotPayload, String> {
         self.upset.build_upset_payload()
+    }
+
+    pub fn overlap_payload(&self) -> Result<OverlapPlotPayload, String> {
+        Ok(self.overlap.to_payload())
     }
 
 }

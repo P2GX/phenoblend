@@ -46,7 +46,7 @@ export class PhenotypeProfileVisualizerComponent implements OnInit {
   readonly isLoading = signal<boolean>(false);
   readonly activeView = signal<VisualizationType>('overlap');
 
-   enrichmentResults = signal<DuoEnrichmentSummary[] | null>(null);
+  enrichmentResults = signal<DuoEnrichmentSummary[] | null>(null);
   isEnrichmentLoading = signal(false);
   enrichmentError = signal<string | null>(null);
 
@@ -85,15 +85,23 @@ export class PhenotypeProfileVisualizerComponent implements OnInit {
         this.notificationService.showError(errMsg);
         return;
       }
-      const recordData = Object.fromEntries(
-        this.annotationService.selectedAssociations(),
-      );
+      const annotationMap = selectedAnnotations.reduce((acc, item) => {
+        const key = item.geneSymbol;
+        if (!acc.has(key)) {
+          acc.set(key, []);
+        }
+        acc.get(key)!.push(item);
+        return acc;
+      }, new Map<string, GeneDiseaseAssociation[]>());
+ 
+      
+      await this.configService.initializeNotebook(annotationMap);
       const overlapResult =
-        await this.configService.getOverlapPlotData(recordData);
+        await this.configService.getOverlapPlotData();
       const upsetResult =
-        await this.configService.getUpsetPlotPayload(recordData);
+        await this.configService.getUpsetPlotPayload();
       const spreadResult =
-        await this.configService.getSpreadPlotPayload(recordData);
+        await this.configService.getSpreadPlotPayload();
       this.upsetData.set(upsetResult);
       this.matrixData.set(overlapResult);
       this.spreadData.set(spreadResult);

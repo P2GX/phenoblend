@@ -2,7 +2,7 @@ use std::{collections::{HashMap, HashSet},  sync::Arc};
 
 use ontolius::{TermId, ontology::{TaxonomyQuery, OntologyTerms, csr::FullCsrOntology}, term::MinimalTerm};
 use serde::{Serialize, Serializer};
-use crate::{blend::dto::{GeneMatch, OverlapPlotPayload, ROOT_PHENOTYPE_TERM_ID, SIMPLE_ROOT_TERM, SpreadPlotPayload, TermMatches, UpsetPlotPayload}, hpo::hpo_util::ontolius_to_simple, hpoa::disease_model::GeneDiseaseAssociation, model::{proband::Proband, simple_term::SimpleOntologyTerm}};
+use crate::{blend::dto::{GeneMatch, OverlapData, OverlapPlotPayload, ROOT_PHENOTYPE_TERM_ID, SIMPLE_ROOT_TERM, SpreadPlotPayload, TermMatches, UpsetPlotPayload}, hpo::hpo_util::ontolius_to_simple, hpoa::disease_model::GeneDiseaseAssociation, model::{proband::Proband, simple_term::SimpleOntologyTerm}};
 use log::{trace};
 
 fn serialize_term_id_set<S>(ids: &HashSet<TermId>, serializer: S) -> Result<S::Ok, S::Error>
@@ -254,26 +254,11 @@ impl GeneDiseaseEntity {
         hpo: Arc<FullCsrOntology>
     ) -> Result<OverlapPlotPayload, String> {
         let tm = compute_term_matches(&proband, gde_list, disease_counts, hpo.as_ref())?;
-            Ok(OverlapPlotPayload::from_term_matches(
-                gde_list.iter().map(|g| g.gene_symbol.clone()),
+            let overlap_data = OverlapData::from_term_matches(
+                 gde_list.iter().map(|g| g.gene_symbol.clone()),
                 &tm,
-            ))
-    }
-
-    pub fn get_upset_plot_payloadOLD(
-        proband: Proband, 
-        gda_map: &HashMap<String, Vec<GeneDiseaseAssociation>>,
-        hpo: Arc<FullCsrOntology>
-    ) -> Result<UpsetPlotPayload, String> {
-
-       /* let mut gd_entry_list: Vec<GeneDiseaseEntity> = Vec::new();
-        for (symbol, gda_list) in gda_map.into_iter() {
-            let gd_entity =   GeneDiseaseEntity::new(gda_list)?;
-            gd_entry_list.push(gd_entity);
-        }
-        Ok(crate::blend::upset_plot::build_upset_payload(&gd_entry_list, &proband, hpo.as_ref())?)
-        */ 
-        Err("Needs refactor".to_ascii_lowercase())
+            );
+            Ok(overlap_data.to_payload())
     }
 
 

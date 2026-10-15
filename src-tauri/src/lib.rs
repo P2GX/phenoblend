@@ -229,17 +229,15 @@ async fn load_gene_disease_associations(
 #[tauri::command]
 fn get_overlap_plot(
     state: tauri::State<'_, Arc<AppState>>,
-    annotations: HashMap<String, Vec<GeneDiseaseAssociation>>
 ) -> Result<OverlapPlotPayload, String> {
-    let state_handle = state.inner().clone();
-    let mut singleton = state_handle.phenoblendtk.lock().map_err(|e| e.to_string())?;
-    singleton.calculate_overlap_matrix(annotations)
+    
+    let singleton = state.phenoblendtk.lock().map_err(|e| e.to_string())?;
+    singleton.get_overlap_plot_payload()
 }
 
 #[tauri::command]
 fn get_upset_plot_payload(
     state: tauri::State<'_, Arc<AppState>>,
-    annotations: HashMap<String, Vec<GeneDiseaseAssociation>>
 ) -> Result<UpsetPlotPayload, String> {
     let state_handle = state.inner().clone();
     let singleton = state_handle.phenoblendtk.lock().map_err(|e| e.to_string())?;
@@ -248,11 +246,10 @@ fn get_upset_plot_payload(
 
 #[tauri::command]
 fn get_spread_plot_payload( state: tauri::State<'_, Arc<AppState>>,
-    annotations: HashMap<String, Vec<GeneDiseaseAssociation>>
 ) -> Result<SpreadPlotPayload, String> {
     let state_handle = state.inner().clone();
     let singleton = state_handle.phenoblendtk.lock().map_err(|e| e.to_string())?;
-    singleton.get_spread_plot_payload(annotations)
+    singleton.get_spread_plot_payload()
   }
   
 

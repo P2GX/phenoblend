@@ -5,6 +5,7 @@ use std::{collections::HashMap, sync::Arc};
 use fenominal::{AutoCompleter, Fenominal, FenominalSentence, OntologyMatch};
 use ga4ghphetools::{dto::hpo_term_dto::HpoTermDuplet, load_ontology};
 use ga4ghphetools::HierarchyMapItem;
+use itertools::Itertools;
 use ontolius::{TermId,  ontology::csr::FullCsrOntology};
 use phenopackets::schema::v2::Phenopacket;
 use rand::SeedableRng;
@@ -12,7 +13,7 @@ use rand::rngs::StdRng;
 
 
 use crate::blend::disease_gene_entity::GeneDiseaseEntity;
-use crate::blend::dto::{PhenoBlendAnalysis, SpreadPlotPayload, UpsetPlotPayload};
+use crate::blend::dto::{OverlapData, PhenoBlendAnalysis, SpreadPlotPayload, UpsetPlotPayload};
 use crate::enrichment::dto::DuoEnrichmentSummary;
 use crate::enrichment::gdannotation_source::{GeneDiseaseAnnotationSource, OntoliusDescendants};
 use crate::enrichment::melded_ppkt::MeldedPpkt;
@@ -183,24 +184,22 @@ impl PhenoblendSingleton {
         ana.upset_payload()
     }
 
+    pub fn get_overlap_plot_payload(
+        &self
+    ) -> Result<OverlapPlotPayload, String> {
+        let nb = self.notebook.as_ref().ok_or("Notebook not initialized")?;
+        let ana = nb.analysis.as_ref().ok_or("Analysis not initialized")?;
+        ana.overlap_payload()
+    }
+
 
     pub fn get_spread_plot_payload(
         &self,
-        annotations: HashMap<String, Vec<GeneDiseaseAssociation>>
     ) -> Result<SpreadPlotPayload, String> {
-        let hpo = self.hpo.as_ref()
-            .ok_or_else(|| "Missing required resource: HPO Ontology".to_string())?;
-        
-        let proband = self.individual.clone();
-        let spread = crate::blend::disease_gene_entity::GeneDiseaseEntity::get_spread_plot_payload(
-            proband, 
-            &annotations, 
-            hpo.clone())?;
-            Ok(spread)
+        let nb = self.notebook.as_ref().ok_or("Notebook not initialized")?;
+        let ana = nb.analysis.as_ref().ok_or("Analysis not initialized")?;
+         Ok(ana.spread.clone())
   }
-
-
-
 
 
 
@@ -415,10 +414,16 @@ impl PhenoblendSingleton {
 
         let term_matches =
             crate::blend::disease_gene_entity::compute_term_matches(&self.individual, entities, &self.hpo_term_to_disease_count_d, hpo.as_ref())?;
-        let overlap = OverlapPlotPayload::from_term_matches(
+        
+        let symbols: Vec<String> = entities
+            .iter()
+            .map(|gde| gde.gene_symbol.clone())
+            .collect_vec();
+        let overlap = OverlapData::from_term_matches(
             entities.iter().map(|g| g.gene_symbol.clone()),
             &term_matches,
         );
+       
         let gene_annotations = entities
             .iter()
             .map(|g| {
@@ -429,7 +434,13 @@ impl PhenoblendSingleton {
             })
             .collect();
         let upset = crate::blend::upset_plot::build_upset_data(entities, &observed, hpo.as_ref())?;
-        Ok(PhenoBlendAnalysis { term_matches, gene_annotations, overlap, upset })
+         let spread = crate::blend::spread_plot::get_spread_plot_payload2(
+            self.individual.clone(), 
+            &symbols,
+            entities, 
+            &hpo
+        )?;
+        Ok(PhenoBlendAnalysis { term_matches, gene_annotations, overlap, upset, spread })
     }
 
     /// Builds the gene-disease entities, runs the analysis, and stores both in the notebook.

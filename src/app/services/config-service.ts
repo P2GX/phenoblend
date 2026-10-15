@@ -28,17 +28,18 @@ export class ConfigService {
     return await invoke("ingest_phenopacket", {'ppktString': ppkt});
   }
 
-  async getOverlapPlotData(annotationMap: Record<string, GeneDiseaseAssociation[]>): Promise<PresenceMatrixPayload> {
-    return await invoke("get_overlap_plot", {annotations: annotationMap});
+  async getOverlapPlotData(): Promise<PresenceMatrixPayload> {
+    return await invoke("get_overlap_plot");
   }
 
-  async getUpsetPlotPayload(annotationMap: Record<string, GeneDiseaseAssociation[]>): Promise<UpsetPlotPayload> {
-    return await invoke<UpsetPlotPayload>("get_upset_plot_payload", {annotations: annotationMap});
+  async getUpsetPlotPayload(): Promise<UpsetPlotPayload> {
+    return await invoke<UpsetPlotPayload>("get_upset_plot_payload");
   }
 
-  async getSpreadPlotPayload(annotationMap: Record<string, GeneDiseaseAssociation[]>): Promise<SpreadPlotPayload> {
-    return await invoke<SpreadPlotPayload>("get_spread_plot_payload", {annotations: annotationMap});
+  async getSpreadPlotPayload(): Promise<SpreadPlotPayload> {
+    return await invoke<SpreadPlotPayload>("get_spread_plot_payload");
   }
+
 
   async getAutocompleteHpo(value: string): Promise<OntologyMatch[]> {
     return invoke<OntologyMatch[]>('get_hpo_autocomplete', { query: value });

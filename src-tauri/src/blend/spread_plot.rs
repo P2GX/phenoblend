@@ -294,6 +294,59 @@ pub fn get_spread_plot_payload(
 }
 
 
+
+pub fn get_spread_plot_payload2(
+    proband: Proband,
+    genotypes: &[String],
+    gd_entities: &[GeneDiseaseEntity],
+    hpo: &FullCsrOntology
+) -> Result<SpreadPlotPayload, String> {
+    //let (gd_entry_list, genotypes) = build_entities(gda_map)?;
+
+    if proband.observed_hpos.is_empty() || genotypes.is_empty() {
+        return Err("Phenotypes and genotypes must not be empty.".to_string());
+    }
+
+    let categories = top_level_categories(&hpo)?;
+    let genes_power_set = genotype_power_set(&genotypes);
+
+    let gene_pos_map: HashMap<String, usize> = genotypes.iter()
+        .enumerate()
+        .map(|(i, g)| (g.clone(), i))
+        .collect();
+
+    let ppkt_counts = ppkt_category_fractions(&proband.observed_hpos, &categories, &hpo);
+
+    let entity_lookup: HashMap<String, &GeneDiseaseEntity> = gd_entities.iter()
+        .map(|gde| (gde.gene_symbol.clone(), gde))
+        .collect();
+
+    let (combo_column_data, _labels_power_set) =
+        build_combo_column_data(&genes_power_set, &entity_lookup, &categories, &hpo);
+
+    let ranked_genes = rank_genes_by_similarity(&genotypes, &combo_column_data, &ppkt_counts, &categories);
+    let ordered_labels = order_combination_labels(&ranked_genes, &gene_pos_map);
+    let sorted_categories = sort_categories_by_ppkt_value(&categories, &ppkt_counts);
+
+    let final_categories = build_final_categories(
+        &sorted_categories,
+        &ordered_labels,
+        &ppkt_counts,
+        &combo_column_data,
+        &hpo,
+    );
+
+    let mut series_labels = vec!["Ppkt".to_string()];
+    series_labels.extend(ordered_labels);
+
+    Ok(SpreadPlotPayload {
+        series_labels,
+        categories: final_categories,
+    })
+}
+
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
