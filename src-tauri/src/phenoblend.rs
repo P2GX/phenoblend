@@ -434,7 +434,7 @@ impl PhenoblendSingleton {
             })
             .collect();
         let upset = crate::blend::upset_plot::build_upset_data(entities, &observed, hpo.as_ref())?;
-         let spread = crate::blend::spread_plot::get_spread_plot_payload2(
+         let spread = crate::blend::spread_plot::get_spread_plot_payload(
             self.individual.clone(), 
             &symbols,
             entities, 
@@ -454,7 +454,7 @@ impl PhenoblendSingleton {
     pub(crate) fn initialize_notebook(
         &mut self,
         gda_list: HashMap<String, Vec<GeneDiseaseAssociation>>,
-    ) -> Result<(), String> {
+    ) -> Result<Notebook, String> {
         let hpo = self.get_hpo().ok_or("Could not retrieve HPO".to_string())?;
        // self.calculate_disease_counts(hpo.as_ref())?;
         let entities = crate::blend::overlap_matrix::build_entity_list(&gda_list)?;
@@ -462,7 +462,7 @@ impl PhenoblendSingleton {
         let nb = self.notebook_mut()?;
         nb.gene_disease_list = entities;
         nb.analysis = Some(analysis);
-        Ok(())
+        Ok(nb.clone())
     }
 
 }

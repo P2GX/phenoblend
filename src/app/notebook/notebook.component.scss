@@ -1,0 +1,178 @@
+.overlap-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.overlap-table th, 
+.overlap-table td {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.overlap-table th {
+  background-color: var(--header-bg, #f8fafc);
+  font-weight: 600;
+  text-align: center;
+}
+
+.term-header {
+  min-width: 250px;
+}
+
+.term-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.term-label {
+  font-weight: 500;
+}
+
+.term-info code {
+  font-size: 0.75rem;
+  color: var(--muted-color, #64748b);
+}
+
+/* Cell Color Coding */
+.overlap-table td.cell-matched {
+  background-color: #dcfce7; /* Soft green for matches */
+  color: #166534;
+  text-align: center;
+  font-weight: bold;
+}
+
+
+/* Unmatched Cell Style with Red X */
+.overlap-table td.cell-unmatched {
+  background-color: #fff1f2; /* Soft light red / rose tint */
+  color: #e11d48;            /* Rich red text color for the X */
+  text-align: center;
+  font-weight: bold;
+  opacity: 0.7;         
+}
+
+
+/* Cell Color Coding */
+.overlap-table td.cell-exact-match {
+  background-color: #bbf7d0; /* Rich green */
+  color: #14532d;
+  text-align: center;
+  font-weight: bold;
+}
+
+.overlap-table td.cell-descendant-match {
+  background-color: #dcfce7; /* Softer green */
+  color: #166534;
+  text-align: center;
+}
+
+.overlap-table td.cell-partial-match {
+  background-color: #fef9c3; /* Soft yellow */
+  color: #854d0e;
+  text-align: center;
+}
+
+.overlap-table td.cell-unmatched {
+  background-color: #f8fafc; 
+  color: #cbd5e1;
+  text-align: center;
+}
+
+
+.upset-section {
+  margin-top: 2rem;
+}
+
+.proband-only-notice {
+  background-color: #fffbeb;
+  border-left: 4px solid #f59e0b;
+  padding: 12px 16px;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.proband-only-notice ul {
+  margin: 4px 0 0 20px;
+  padding: 0;
+}
+
+.upset-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.upset-table th, 
+.upset-table td {
+  padding: 12px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  vertical-align: top;
+}
+
+.upset-table th {
+  background-color: var(--header-bg, #f8fafc);
+  font-weight: 600;
+  text-align: center;
+}
+
+.header-overlapped {
+  background-color: #f0fdf4 !important; /* Soft green header hint */
+  color: #166534;
+}
+
+.header-remaining {
+  background-color: #faf5ff !important; /* Soft purple header hint */
+  color: #6b21a8;
+}
+
+.gene-symbol-cell {
+  background-color: #f8fafc;
+  font-weight: bold;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Cell Color Coding matching your definitions */
+.cell-overlapped {
+  background-color: #f7fee7; /* Light greenish tint */
+}
+
+.cell-remaining {
+  background-color: #fdf4ff; /* Light purple tint */
+}
+
+.term-list {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.term-item {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.matched-by {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.empty-text {
+  color: #94a3b8;
+  font-style: italic;
+  display: block;
+  text-align: center;
+}

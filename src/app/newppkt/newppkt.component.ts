@@ -44,7 +44,6 @@ export class NewCaseComponent {
     this.isProcessing.set(true);
     this.statusMessage.set('Parsing phenopacket payload in Rust engine...');
     this.errorDetails.set(null);
-    console.log("processPPktingest")
     try { 
       await this.configService.ingestPhenopacket(payload);
       const hpoCount = await this.configService.getObservedHpoCount();

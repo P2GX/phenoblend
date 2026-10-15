@@ -28,7 +28,6 @@ pub struct Notebook {
 
 
 pub fn emit_notebook(app: &AppHandle, notebook: &Notebook) -> Result<(), String> {
-    eprintln!("emit notebook no={:?}", notebook);
     app.emit(NOTEBOOK_EVENT, notebook).map_err(|e| e.to_string())
 }
 

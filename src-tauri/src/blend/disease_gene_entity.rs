@@ -260,24 +260,7 @@ impl GeneDiseaseEntity {
             );
             Ok(overlap_data.to_payload())
     }
-
-
-    pub fn get_spread_plot_payload(
-        proband: Proband, 
-        gda_map: &HashMap<String, Vec<GeneDiseaseAssociation>>,
-        hpo: Arc<FullCsrOntology>
-    ) -> Result<SpreadPlotPayload, String> {
-        let mut gd_entry_list: Vec<GeneDiseaseEntity> = Vec::new();
-        for (symbol, gda_list) in gda_map.into_iter() {
-            let gd_entity =   GeneDiseaseEntity::new(gda_list)?;
-            gd_entry_list.push(gd_entity);
-        }
-       crate::blend::spread_plot::get_spread_plot_payload(proband, gda_map, hpo)
-    }
-
-
    
-
 
 }
 

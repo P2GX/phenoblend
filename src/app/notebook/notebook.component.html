@@ -1,6 +1,6 @@
 
 @if (notebook(); as nb) {
-    <pre>{{ nb | json }}</pre>
+   <!-- <pre>{{ nb | json }}</pre> -->
   <section class="notebook">
     <header>
       <h2>Notebook {{ nb.id }}</h2>
@@ -27,6 +27,160 @@
     } @else { 
         <p>No observed HPO terms</p>
     }
+    <section class="overlap-section">
+  <header>
+    <h2>Overlap Matrix</h2>
+    <small>HPO Terms vs. Gene Entities</small>
+  </header>
+
+  @if (nb.analysis?.overlap; as overlapData) {
+    <div class="table-container" style="overflow-x: auto;">
+      <table class="overlap-table">
+        <thead>
+          <tr>
+            <th class="sticky-col">HPO Term</th>
+            @for (entity of overlapData.entities; track entity) {
+              <th>{{ entity }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (col of overlapData.columns; track col.term.termId) {
+            <tr>
+              <!-- Row Header: Shows HPO Label and ID -->
+              <td class="sticky-col term-header">
+                <div class="term-info">
+                  <span class="term-label">{{ col.term.termLabel }}</span>
+                  <code>{{ col.term.termId }}</code>
+                </div>
+              </td>
+              
+              <!-- Entity Columns -->
+              @for (entity of overlapData.entities; track entity) {
+                @let match = getEntityMatchForTerm(col, entity);
+                <td [class]="getMatchCellClass(match)" [title]="getMatchTooltip(match, entity, col.term.termLabel)">
+                  <span class="cell-content">
+                    {{ getCellDisplayLabel(match) }}
+                  </span>
+                </td>
+              }
+            </tr>
+          } @empty {
+            <tr>
+              <td [attr.colspan]="overlapData.entities.length + 1">No overlap data available.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <p>No overlap data available yet.</p>
+  }
+</section>
+
+<section class="upset-section">
+  <header>
+    <h2>UpSet Plot Breakdown</h2>
+    <small>Gene annotations split by proband overlap (Total Proband Terms: {{ nb.analysis?.upset?.nProbandTerms }})</small>
+  </header>
+
+  @if (nb.analysis?.upset; as upsetData) {
+    <!-- Summary stats / Overview cards -->
+    <div class="upset-summary-cards">
+      <div class="card accounted">
+        <strong>Accounted Proband Terms</strong>
+        <span class="count">{{ upsetData.nProbandTerms - upsetData.probandOnly.length }}</span>
+      </div>
+      <div class="card unaccounted">
+        <strong>Unaccounted (Proband-Only) Terms</strong>
+        <span class="count">{{ upsetData.probandOnly.length }}</span>
+      </div>
+    </div>
+
+    <!-- Unaccounted Proband-Only Terms Warning -->
+    @if (upsetData.probandOnly.length > 0) {
+      <div class="proband-only-notice">
+        <strong>Unaccounted Proband Terms ({{ upsetData.probandOnly.length }}):</strong>
+        <span>No disease annotation accounts for these terms:</span>
+        <ul class="term-chips">
+          @for (term of upsetData.probandOnly; track term.termId) {
+            <li><code>{{ term.termId }}</code> – {{ term.termLabel }}</li>
+          }
+        </ul>
+      </div>
+    }
+
+    <div class="table-container" style="overflow-x: auto;">
+      <table class="upset-table">
+        <thead>
+          <tr>
+            <th>Gene Symbol</th>
+            <th class="header-overlapped">Proband Overlapped Terms</th>
+            <th class="header-remaining">Remaining Annotated Terms</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (gene of upsetData.genes; track gene.geneSymbol) {
+            <tr>
+              <!-- Gene Symbol Column -->
+              <td class="gene-symbol-cell">
+                <strong>{{ gene.geneSymbol }}</strong>
+              </td>
+              
+              <!-- Proband Overlapped (Green section) -->
+              <td class="cell-overlapped">
+                @if (gene.probandOverlapped.length > 0) {
+                  <ul class="term-list">
+                    @for (match of gene.probandOverlapped; track match.term.termId) {
+                      <li class="term-item">
+                        <span class="main-term" [title]="match.term.termLabel">
+                          <code>{{ match.term.termId }}</code> {{ match.term.termLabel }}
+                        </span>
+                        @if (match.term.termId !== match.matchedBy.termId) {
+                          <small class="matched-by">
+                            (Matched via descendant: <code>{{ match.matchedBy.termId }}</code> {{ match.matchedBy.termLabel }})
+                          </small>
+                        }
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  <span class="empty-text">None</span>
+                }
+              </td>
+
+              <!-- Remaining Annotated (Purple section) -->
+              <td class="cell-remaining">
+                @if (gene.remainingAnnotated.length > 0) {
+                  <ul class="term-list">
+                    @for (term of gene.remainingAnnotated; track term.termId) {
+                      <li class="term-item">
+                        <span [title]="term.termLabel">
+                          <code>{{ term.termId }}</code> {{ term.termLabel }}
+                        </span>
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  <span class="empty-text">None</span>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="3">No genes found in UpSet data.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <p>No UpSet data available yet.</p>
+  }
+
+
+</section>
+
 } @else {
   <p>No notebook loaded.</p>
 }

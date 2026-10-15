@@ -30,7 +30,7 @@ use crate::{
         dto::{UpsetPlotPayload, ROOT_PHENOTYPE_TERM_ID, SIMPLE_ROOT_TERM},
     },
     hpo::hpo_util::ontolius_to_simple,
-    model::{proband::Proband, simple_term::SimpleOntologyTerm},
+    model::simple_term::SimpleOntologyTerm,
 };
 
 /// A disease annotation that the proband has, with the proband term that accounts for it.

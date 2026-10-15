@@ -496,11 +496,14 @@ fn analyze_duo_enrichment(
 }
 
 #[tauri::command]
-fn  initialize_notebook(
+fn initialize_notebook(
+    app: tauri::AppHandle,
     state: tauri::State<'_, Arc<AppState>>,
     gda_list: HashMap<String, Vec<GeneDiseaseAssociation>>) -> Result<(), String> {
     let mut singleton = state.phenoblendtk.lock().map_err(|e| e.to_string())?;
-    singleton.initialize_notebook(gda_list)?;
-
+    let notebook = singleton.initialize_notebook(gda_list)?;
+    if let Err(e) = emit_notebook(&app, &notebook) {
+        log::error!("Failed to emit notebook: {e}");
+    }
     Ok(())
 }
