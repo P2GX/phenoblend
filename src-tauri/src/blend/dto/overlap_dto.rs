@@ -1,21 +1,12 @@
-use std::{collections::HashMap, sync::{Arc, LazyLock}};
+//! Overlap
+//! Test the overlap of HPO terms of a phenopacket with the distribution of HPO terms in the disease model.
+//! 
+//! 
+use std::{collections::{BTreeMap, HashMap}, sync::Arc};
+
+use serde::{Deserialize,Serialize};
 use ontolius::{TermId, ontology::{OntologyTerms, csr::FullCsrOntology}, term::MinimalTerm};
-use serde::{Serialize, Deserialize};
-
-use std::collections::BTreeMap;
-use crate::{blend::upset_plot::UpsetData, util::serde_util::serialize_term_id_vec};
-use crate::{blend::dto::MatchType::NoMatch, model::simple_term::SimpleOntologyTerm};
-
-
-/// Root of the HPO phenotype branch; sharing only this term means no meaningful match.
-pub const ROOT_PHENOTYPE_ID: &str = "HP:0000118";
-pub static ROOT_PHENOTYPE_TERM_ID: std::sync::LazyLock<TermId> = std::sync::LazyLock::new(|| {
-    let tid: TermId  = ROOT_PHENOTYPE_ID.parse().unwrap();
-    tid
-});
-pub static SIMPLE_ROOT_TERM: LazyLock<SimpleOntologyTerm> = LazyLock::new(|| {
-    SimpleOntologyTerm::new(ROOT_PHENOTYPE_ID, "Phenotypic abnormality").unwrap()
-});
+use crate::{blend::dto::{SIMPLE_ROOT_TERM, constants::ROOT_PHENOTYPE_ID}, model::simple_term::SimpleOntologyTerm};
 
 
 /// How a gene-disease entity relates to one proband term.
@@ -32,6 +23,7 @@ pub enum MatchType {
     /// Only the root term is shared. Score=0.0 means match at root (no match!)
     NoMatch,
 }
+
 
 /// The outcome of matching one proband term against one gene-disease entity.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -76,7 +68,7 @@ impl GeneMatch {
 
     pub fn no_match() -> Self {
         Self {
-            match_type: NoMatch,
+            match_type: MatchType::NoMatch,
             score: 0.0,
             matched_term: SIMPLE_ROOT_TERM.clone(),
         }
@@ -208,116 +200,4 @@ impl OverlapData {
             columns: term_matches.to_vec(),
         }
     }
-}
-
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UpsetPlotPayload {
-    /// The unique gene symbols being evaluated (e.g., ["MBNL1", "DMPK"])
-    pub genes: Vec<String>,
-    
-    /// List of combinations, where each combination is a subset of gene symbols
-    pub combinations: Vec<Vec<String>>,
-    
-    /// Total annotated HPO term intersection sizes per combination (Top-Right background bars)
-    pub combination_annotated: Vec<u32>,
-    
-    /// Subsets of those terms overlapping with patient phenotypes (Top-Right foreground bars)
-    pub combination_observed: Vec<u32>,
-    
-    /// Total annotated HPO term sizes per individual gene (Bottom-Left background bars)
-    pub gene_annotated: Vec<u32>,
-    
-    /// Total terms per individual gene overlapping with patient phenotypes (Bottom-Left foreground bars)
-    pub gene_observed: Vec<u32>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UpsetGene {
-    /// Gene symbol of gene associated with a disease
-    gene_symbol: String,
-    /// HPO terms observed in proband and also associated with gene (explicit only)
-    #[serde(serialize_with = "serialize_term_id_vec")]
-    proband_overlapped_tids: Vec<TermId>,
-    /// HPO Terms annotation to the gene but not reported in the proband (explicit only)
-    #[serde(serialize_with = "serialize_term_id_vec")]
-    remaining_annotated_tids: Vec<TermId>
-}
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UpsetIntersection {
-    /// Gene symbol or symbols for intersection (on vertical of upset plot)
-    gene_symbol_list: Vec<String>,
-     /// HPO terms observed in proband and also associated with gene (explicit only)
-    #[serde(serialize_with = "serialize_term_id_vec")]
-    proband_overlapped_tids: Vec<TermId>,
-    /// HPO Terms annotation to the gene but not reported in the proband (explicit only)
-    #[serde(serialize_with = "serialize_term_id_vec")]
-    remaining_annotated_tids: Vec<TermId>
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SpreadPlotCategory {
-    pub id: String,
-    pub name: String,
-    /// Optional field mapping to `alias?: string`
-    pub alias: Option<String>,
-    /// Patient/Phenopacket fraction (`ppktValue`)
-    pub ppkt_value: f64,
-    /// Array of values for each gene combo/series (`geneValues`)
-    pub gene_values: Vec<f64>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SpreadPlotPayload {
-    /// e.g., ["Ppkt", "MBNL1", "DMPK", "MBNL1+DMPK"]
-    pub series_labels: Vec<String>,
-    pub categories: Vec<SpreadPlotCategory>,
-}
-
-
-
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct PhenoBlendAnalysis {
-    /// Source of truth: how each observed proband term matches each gene entity.
-    pub term_matches: Vec<TermMatches>,
-    /// All annotated terms per gene entity (needed later for the UpSet "annotated" bars).
-    pub gene_annotations: BTreeMap<String, Vec<SimpleOntologyTerm>>,
-    pub overlap: OverlapData,
-    pub upset: UpsetData,   
-    pub spread: SpreadPlotPayload, 
-}
-
-
-impl PhenoBlendAnalysis {
-    pub fn new(
-        term_matches: Vec<TermMatches>,
-        annotations: BTreeMap<String, Vec<SimpleOntologyTerm>>,
-        overlap: OverlapData,
-        upset: UpsetData,
-        spread: SpreadPlotPayload) -> Self {
-            Self { 
-                term_matches, 
-                gene_annotations: annotations, 
-                overlap, 
-                upset,
-                spread
-            }
-    } 
-
-    pub fn upset_payload(&self) -> Result<UpsetPlotPayload, String> {
-        self.upset.build_upset_payload()
-    }
-
-    pub fn overlap_payload(&self) -> Result<OverlapPlotPayload, String> {
-        Ok(self.overlap.to_payload())
-    }
-
 }

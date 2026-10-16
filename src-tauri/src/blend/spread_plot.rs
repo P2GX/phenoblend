@@ -1,5 +1,4 @@
 use std::collections::{HashMap, BTreeSet};
-use std::sync::Arc;
 use itertools::Itertools;
 
 use ontolius::TermId;
@@ -9,25 +8,7 @@ use ontolius::term::MinimalTerm;
 
 use crate::blend::disease_gene_entity::GeneDiseaseEntity;
 use crate::blend::dto::{SpreadPlotCategory, SpreadPlotPayload};
-use crate::hpoa::disease_model::GeneDiseaseAssociation;
 use crate::model::proband::Proband;
-
-/// Converts raw gene->GDA mappings into clean entities, alongside a parallel
-/// list of gene symbols in the same (HashMap-iteration) order.
-fn build_entities(
-    gda_map: &HashMap<String, Vec<GeneDiseaseAssociation>>,
-) -> Result<(Vec<GeneDiseaseEntity>, Vec<String>), String> {
-    let mut gd_entry_list = Vec::new();
-    let mut genotypes = Vec::new();
-
-    for (symbol, gda_list) in gda_map.iter() {
-        let gd_entity = GeneDiseaseEntity::new(gda_list)?;
-        gd_entry_list.push(gd_entity);
-        genotypes.push(symbol.clone());
-    }
-
-    Ok((gd_entry_list, genotypes))
-}
 
 /// Fetches the top-level HPO organ-system categories (direct children of HP:0000118).
 fn top_level_categories(hpo: &FullCsrOntology) -> Result<Vec<TermId>, String> {
@@ -237,6 +218,7 @@ fn build_final_categories(
             alias: None,
             ppkt_value: ppkt_val,
             gene_values,
+            ppkt_terms: Vec::default(),
         });
     }
 
@@ -253,13 +235,11 @@ pub fn get_spread_plot_payload(
     gd_entities: &[GeneDiseaseEntity],
     hpo: &FullCsrOntology
 ) -> Result<SpreadPlotPayload, String> {
-    //let (gd_entry_list, genotypes) = build_entities(gda_map)?;
-
     if proband.observed_hpos.is_empty() || genotypes.is_empty() {
         return Err("Phenotypes and genotypes must not be empty.".to_string());
     }
 
-    let categories = top_level_categories(&hpo)?;
+    let category_term_id_list = top_level_categories(&hpo)?;
     let genes_power_set = genotype_power_set(&genotypes);
 
     let gene_pos_map: HashMap<String, usize> = genotypes.iter()
@@ -267,18 +247,18 @@ pub fn get_spread_plot_payload(
         .map(|(i, g)| (g.clone(), i))
         .collect();
 
-    let ppkt_counts = ppkt_category_fractions(&proband.observed_hpos, &categories, &hpo);
+    let ppkt_counts = ppkt_category_fractions(&proband.observed_hpos, &category_term_id_list, &hpo);
 
     let entity_lookup: HashMap<String, &GeneDiseaseEntity> = gd_entities.iter()
         .map(|gde| (gde.gene_symbol.clone(), gde))
         .collect();
 
     let (combo_column_data, _labels_power_set) =
-        build_combo_column_data(&genes_power_set, &entity_lookup, &categories, &hpo);
+        build_combo_column_data(&genes_power_set, &entity_lookup, &category_term_id_list, &hpo);
 
-    let ranked_genes = rank_genes_by_similarity(&genotypes, &combo_column_data, &ppkt_counts, &categories);
+    let ranked_genes = rank_genes_by_similarity(&genotypes, &combo_column_data, &ppkt_counts, &category_term_id_list);
     let ordered_labels = order_combination_labels(&ranked_genes, &gene_pos_map);
-    let sorted_categories = sort_categories_by_ppkt_value(&categories, &ppkt_counts);
+    let sorted_categories = sort_categories_by_ppkt_value(&category_term_id_list, &ppkt_counts);
 
     let final_categories = build_final_categories(
         &sorted_categories,
@@ -294,6 +274,8 @@ pub fn get_spread_plot_payload(
     Ok(SpreadPlotPayload {
         series_labels,
         categories: final_categories,
+        ppkt_uncategorized: vec![],
+        n_ppkt_terms: 0, // TODO
     })
 }
 
@@ -301,9 +283,12 @@ pub fn get_spread_plot_payload(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::tests::hpo_fixture::hpo;
+
+use super::*;
     use rstest::{fixture, rstest};
-    use std::collections::HashMap;
+    use std::{collections::HashMap, sync::Arc};
+    
 
     // ---------------------------------------------------------------------
     // genotype_power_set
@@ -414,31 +399,38 @@ mod tests {
         assert!(result.contains(&"UNKNOWN_GENE+GENE_B".to_string()));
     }
 
-    // ---------------------------------------------------------------------
-    // build_entities
-    // ---------------------------------------------------------------------
-    // NOTE: placeholder — I don't know GeneDiseaseAssociation's fields or
-    // GeneDiseaseEntity::new's exact validation behavior (when does it
-    // return Err?). Fill in `sample_gda(...)` once you share the real shape.
+    #[rstest]
+    fn test_top_level_categories(hpo: Arc<FullCsrOntology>) {
+        let result = top_level_categories(&hpo);
+        assert!(
+            result.is_ok(),
+            "Expected successful retrieval of top-level categories, got error: {:?}",
+            result.err()
+        );
 
-    // #[fixture]
-    // fn sample_gda_map() -> HashMap<String, Vec<GeneDiseaseAssociation>> {
-    //     let mut map = HashMap::new();
-    //     map.insert("GENE_A".to_string(), vec![/* GeneDiseaseAssociation { ... } */]);
-    //     map
-    // }
-    //
-    // #[rstest]
-    // fn build_entities_preserves_gene_symbols(sample_gda_map: HashMap<String, Vec<GeneDiseaseAssociation>>) {
-    //     let (entities, genotypes) = build_entities(&sample_gda_map).unwrap();
-    //     assert_eq!(entities.len(), genotypes.len());
-    //     assert!(genotypes.contains(&"GENE_A".to_string()));
-    // }
-    //
-    // #[rstest]
-    // fn build_entities_propagates_entity_construction_error() {
-    //     // Construct a GeneDiseaseAssociation that should cause
-    //     // GeneDiseaseEntity::new(...) to return Err, and assert build_entities
-    //     // surfaces that Err rather than panicking or silently dropping it.
-    // }
+        let categories = result.unwrap();
+        assert!(
+            !categories.is_empty(),
+            "Expected at least one top-level HPO category under HP:0000118"
+        );
+        let n_top_level_terms: usize = 23;
+        assert_eq!(n_top_level_terms, categories.len());
+        // check an example
+        // Abnormality of the cardiovascular system HP:0001626
+        let cv_abn: TermId = "HP:0001626".parse().unwrap();
+        assert!(categories.contains(&cv_abn));
+    }
+
+    #[test]
+    fn test_genotype_power_set() {
+        let genotypes = vec!["geneA".to_string(), "geneB".to_string()];
+        let result = genotype_power_set(&genotypes);
+        let expected = vec![
+            vec!["geneA".to_string()],
+            vec!["geneB".to_string()],
+            vec!["geneA".to_string(), "geneB".to_string()],
+        ];
+
+        assert_eq!(result, expected);
+    }
 }

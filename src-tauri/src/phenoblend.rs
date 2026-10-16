@@ -19,7 +19,7 @@ use crate::enrichment::gdannotation_source::{GeneDiseaseAnnotationSource, Ontoli
 use crate::enrichment::melded_ppkt::MeldedPpkt;
 use crate::enrichment::test::{EnrichmentTest, Method};
 use crate::excel::payload_to_excel::export_upset_plot_to_xlsx;
-use crate::model::notebook::Notebook;
+use crate::model::Notebook;
 use crate::{blend::dto::OverlapPlotPayload, hpoa::disease_model::SimpleDiseaseModel, model::{proband::Proband, simple_term::SimpleOntologyTerm}};
 use crate::hpoa::disease_model::GeneDiseaseAssociation;
 use crate::util::settings::PhenoblendSettings;

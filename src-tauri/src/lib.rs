@@ -28,10 +28,10 @@ use ga4ghphetools::{pick_file_and_process, load_ontology, OntologyLoadEvent};
 use crate::blend::dto::UpsetPlotPayload;
 use crate::blend::dto::SpreadPlotPayload;
 use crate::enrichment::dto::DuoEnrichmentSummary;
-use crate::model::notebook::Notebook;
+use crate::model::Notebook;
 use crate::{blend::dto::OverlapPlotPayload, phenoblend::PhenoblendSingleton};
 use crate::model::status::InitializationStatusDto;
-use crate::model::notebook::emit_notebook;
+use crate::model::emit_notebook;
 use crate::hpoa::disease_model::GeneDiseaseAssociation;
 use tauri_plugin_log::{Target, TargetKind};
 

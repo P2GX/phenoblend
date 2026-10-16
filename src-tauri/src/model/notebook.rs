@@ -5,7 +5,7 @@
 
 use uuid::Uuid;
 
-use crate::{blend::{disease_gene_entity::GeneDiseaseEntity, dto::{PhenoBlendAnalysis, UpsetPlotPayload}}, model::simple_term::SimpleOntologyTerm};
+use crate::{blend::{disease_gene_entity::GeneDiseaseEntity, dto::{OverlapData, OverlapPlotPayload, PhenoBlendAnalysis, SpreadPlotPayload, UpsetPlotPayload}, upset_plot::UpsetData}, model::simple_term::SimpleOntologyTerm};
 use std::time::{SystemTime, UNIX_EPOCH};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
@@ -59,10 +59,29 @@ impl Notebook {
     }
 
     pub fn upset_payload(&self) -> Result<UpsetPlotPayload, String> {
-        match &self.analysis {
-            Some(a) => a.upset_payload(),
-            None => Err("Analysis object not initialized".to_string()),
-        }
+           let analysis = self.analysis.as_ref().ok_or("Analysis not initialized")?;
+           analysis.upset_payload()
+    }
+
+     pub fn upset_data(&self) -> Result<UpsetData, String> {
+           let analysis = self.analysis.as_ref().ok_or("Analysis not initialized")?;
+           Ok(analysis.upset.clone())
+    }
+
+    pub fn overlap_data(&self) -> Result<OverlapData, String> {
+        let analysis = self.analysis.as_ref().ok_or("Analysis not initialized")?;
+        Ok(analysis.overlap.clone())
+    }
+
+    pub fn overlap_payload(&self) -> Result<OverlapPlotPayload, String> {
+        let analysis = self.analysis.as_ref().ok_or("Analysis not initialized")?;
+        let overlap_data = &analysis.overlap;
+        Ok(overlap_data.to_payload())
+    }
+
+    pub fn spread_payload(&self) -> Result<SpreadPlotPayload, String> {
+           let analysis = self.analysis.as_ref().ok_or("Analysis not initialized")?;
+           Ok(analysis.spread.clone())
     }
 
  
