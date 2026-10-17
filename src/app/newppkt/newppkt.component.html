@@ -1,51 +1,66 @@
-<div class="new-case-container">
+<div class="workspace-page">
   <header class="workspace-header">
-  <div class="workspace-header__main">
-    <h1>Initialize Phenotype Data</h1>
-    <p class="workspace-header__description">
-      Select a method to import or extract Human Phenotype Ontology (HPO) terms for an individual.
-    </p>
-  </div>
-
-  @if (observedHpoCount > 0) {
-    <div class="workspace-header__alert">
-      <svg class="alert-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-      </svg>
-      <p class="workspace-header__warning-text">
-        Current data comprises <strong>{{observedHpoCount}}</strong> observed HPO terms. These terms will be deleted if new HPO data is entered.
+    <div class="workspace-header__main">
+      <h1>Initialize Phenotype Data</h1>
+      <p class="workspace-header__description">
+        Select a method to import or extract Human Phenotype Ontology (HPO) terms for an individual.
       </p>
     </div>
-  }
-</header>
+
+    @if (observedHpoCount > 0) {
+      <div class="workspace-header__alert">
+        <svg class="alert-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <p class="workspace-header__warning-text">
+          Current data comprises <strong>{{observedHpoCount}}</strong> observed HPO terms. These terms will be deleted if new HPO data is entered.
+        </p>
+      </div>
+    }
+  </header>
 
   <div class="workspace-body">
     <div class="ingest-options-grid">
+      
       <!-- Option 1: Phenopacket Upload -->
       <div class="ingest-card">
         <div class="card-icon">📄</div>
         <h2>Load GA4GH Phenopacket</h2>
         <p>Import clinical data directly from an existing GA4GH phenopacket JSON payload.</p>
-        <hpo-phenopacket-loader 
-          [onIngest]="processPhenopacketIngest">
-        </hpo-phenopacket-loader>
+        
+        <div class="card-action-box">
+          <hpo-phenopacket-loader [onIngest]="processPhenopacketIngest"></hpo-phenopacket-loader>
+        </div>
       </div>
 
       <!-- Option 2: Text Mining Wizard -->
       <div class="ingest-card text-mining-card">
-        <div class="card-icon">🔍</div>
+        <div class="card-icon">
+          <!-- Text mining / document search representation -->
+          <svg class="custom-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 15a3 3 0 100-6 3 3 0 000 6z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.5 13.5L16 16" />
+          </svg>
+        </div>
         <h2>Text Mining Curation</h2>
-        <p>Analyze unstructured clinical notes and curate HPO terms using text mining.</p>
-        <button 
-          class="btn-primary" 
-          [disabled]="isProcessing()"
-          (click)="openCurationWizard()">
-          Launch Text Mining Wizard
-        </button>
+        <p>Analyze unstructured clinical notes and curate HPO terms using text mining algorithms.</p>
+        
+        <div class="card-action-box">
+          <button 
+            class="btn-primary" 
+            [disabled]="isProcessing()"
+            (click)="openCurationWizard()">
+            <span>Launch Text Mining Wizard</span>
+            <svg class="btn-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </button>
+        </div>
       </div>
-    </div>
 
-    <!-- Status Indicators -->
+    </div>
+     <!-- Status Indicators -->
     @if (isProcessing()) {
       <div class="status-indicator processing">
         <span class="spinner">⏳</span> {{ statusMessage() }}
@@ -61,6 +76,7 @@
     }
   </div>
 </div>
+
 
 @if (showHpoTwoStepDialog()) {
   <app-hpo-dialog-wrapper

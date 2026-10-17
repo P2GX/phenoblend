@@ -89,6 +89,7 @@ export class NewCaseComponent {
   protected hpoDialogData?: HpoTwostepData;
 
   protected openCurationWizard(): void {
+    console.log("OCW")
     this.hpoDialogData = {
       mineTextProvider: (text: string) => this.configService.mineClinicalText(text),
       autocompleteProvider: (query: string) => this.performHpoAutocomplete(query),

@@ -1,86 +1,8 @@
-.ingest-options-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  align-items: stretch; // forces both cards to match the tallest one
+.workspace-page {
+  max-width: 64rem;
+  margin: 2.5rem auto;
+  padding: 0 1.5rem;
 }
-
-.ingest-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 2rem 1.5rem;
-  border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 0.8rem;
-  background: var(--card-bg, #fff);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-  transition: all 0.2s ease;
-
-  &:hover {
-    border-color: #cbd5e1;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  }
-
-  .card-icon {
-    font-size: 2.25rem;
-    margin-bottom: 0.75rem;
-    background: #f8fafc;
-    width: 4rem;
-    height: 4rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    border: 1px solid #f1f5f9;
-  }
-
-  h2 {
-    margin: 0 0 0.5rem;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #0f172a;
-  }
-
-  p {
-    flex-grow: 1; // pushes the action (button/loader) to the same vertical position in both cards
-    margin: 0 0 1.5rem;
-    color: var(--text-secondary, #666);
-    font-size: 0.9rem;
-    line-height: 1.4;
-  }
-
-  hpo-phenopacket-loader, 
-  .btn-primary {
-    width: 100%;
-    max-width: 280px; // Keeps buttons from stretching too wide on large screens
-  }
-}
-
-.btn-primary {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #2563eb;
-  color: white;
-  font-weight: 600;
-  font-size: 0.9rem;
-  padding: 0.625rem 1.25rem;
-  border-radius: 0.5rem;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-
-  &:hover:not(:disabled) {
-    background-color: #1d4ed8;
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-}
-
 
 .workspace-header {
   margin-bottom: 2rem;
@@ -94,27 +16,22 @@
   }
 }
 
-// Standard description text
 .workspace-header__description {
   color: #64748b;
   font-size: 1rem;
   margin: 0;
-  line-height: 1.5;
 }
 
-// Warning/Notice Callout Box (Only shows when observedHpoCount > 0)
 .workspace-header__alert {
   display: flex;
   align-items: flex-start;
-  gap: 0.75kt;
   gap: 0.75rem;
   margin-top: 1rem;
   padding: 0.875rem 1rem;
-  background-color: #fffbeb; // Soft warm yellow/amber tint for warnings
+  background-color: #fffbeb;
   border: 1px solid #fef3c7;
-  border-left: 4px solid #f59e0b; // Amber accent bar on the left
+  border-left: 4px solid #f59e0b;
   border-radius: 0.5rem;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 
   .alert-icon {
     width: 1.25rem;
@@ -127,11 +44,132 @@
 
 .workspace-header__warning-text {
   font-size: 0.875rem;
-  color: #92400e; // Deep amber text for readability
+  color: #92400e;
   margin: 0;
   line-height: 1.4;
 
   strong {
     font-weight: 600;
+  }
+}
+
+// Cards Grid Layout
+.ingest-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+.ingest-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2.25rem 2rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  }
+
+  .card-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    background: #f8fafc;
+    width: 4.5rem;
+    height: 4.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1rem;
+    border: 1px solid #f1f5f9;
+    color: #2563eb;
+
+    .custom-icon {
+      width: 2.25rem;
+      height: 2.25rem;
+    }
+  }
+
+  h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #0f172a;
+  }
+
+  p {
+    flex-grow: 1; 
+    margin: 0 0 1.75rem;
+    color: #64748b;
+    font-size: 0.925rem;
+    line-height: 1.5;
+  }
+}
+
+// Dashed Box Container matching both cards identically
+.card-action-box {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px dashed #cbd5e1;
+  border-radius: 0.75rem;
+  background-color: #f8fafc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: border-color 0.2s ease;
+
+  &:hover {
+    border-color: #94a3b8;
+  }
+
+  // Ensures child elements (loaders or buttons) fill the box cleanly
+  hpo-phenopacket-loader,
+  .btn-primary {
+    width: 100%;
+  }
+}
+
+// Primary CTA button for Text Mining
+.btn-primary {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #2563eb;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+  transition: all 0.2s ease;
+
+  .btn-arrow {
+    width: 1.1rem;
+    height: 1.1rem;
+    transition: transform 0.2s ease;
+  }
+
+  &:hover:not(:disabled) {
+    background-color: #1d4ed8;
+    box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
+
+    .btn-arrow {
+      transform: translateX(4px);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 }
