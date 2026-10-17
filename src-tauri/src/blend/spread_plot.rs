@@ -313,16 +313,6 @@ pub fn build_spread_payload(
     )
 }
 
-/// Same, for callers that hold a `Proband`.
-pub fn get_spread_plot_payload(
-    proband: &Proband,
-    genotypes: &[String],
-    gd_entities: &[GeneDiseaseEntity],
-    hpo: &FullCsrOntology,
-) -> Result<SpreadPlotPayload, String> {
-    build_spread_payload(&proband.observed_hpos, genotypes, gd_entities, hpo)
-}
-
 impl SpreadPlotPayload {
     /// Checks that the parallel parts line up and that every value matches the terms listed
     /// for it: `value * denominator = number of terms`.

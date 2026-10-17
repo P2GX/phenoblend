@@ -62,7 +62,7 @@ pub fn run() {
                 //.level_for("tauri", log::LevelFilter::Warn)
                 .targets([
                     Target::new(TargetKind::Stdout),
-                   // Target::new(TargetKind::LogDir { file_name: Some("phenoblendtk.log".to_string()) }), 
+                   // Target::new(TargetKind::LogDir { file_name: Some("phenoblend.log".to_string()) }), 
                    // Target::new(TargetKind::Webview), // forwards logs to the browser devtools console
                 ])
                 .build(),

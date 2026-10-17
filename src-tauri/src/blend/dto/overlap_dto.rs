@@ -6,7 +6,7 @@ use std::{collections::{BTreeMap, HashMap}, sync::Arc};
 
 use serde::{Deserialize,Serialize};
 use ontolius::{TermId, ontology::{OntologyTerms, csr::FullCsrOntology}, term::MinimalTerm};
-use crate::{blend::dto::{SIMPLE_ROOT_TERM, constants::ROOT_PHENOTYPE_ID}, model::simple_term::SimpleOntologyTerm};
+use crate::{blend::dto::constants::ROOT_PHENOTYPE_ID, model::simple_term::SimpleOntologyTerm};
 
 
 /// How a gene-disease entity relates to one proband term.
@@ -65,18 +65,6 @@ impl GeneMatch {
         }
         Ok(Self { match_type: MatchType::Partial, score, matched_term: term })
     }
-
-    pub fn no_match() -> Self {
-        Self {
-            match_type: MatchType::NoMatch,
-            score: 0.0,
-            matched_term: SIMPLE_ROOT_TERM.clone(),
-        }
-    }
-
-    pub fn matched_term(&self) -> SimpleOntologyTerm {
-        self.matched_term.clone()
-    }
 }
 
 
@@ -106,10 +94,6 @@ impl TermMatches {
             hpo_name: self.term.term_label.clone(),
             scores: self.matches.iter().map(|(g, m)| (g.clone(), m.score)).collect(),
         }
-    }
-
-    pub fn proband_hpo_term(&self) -> SimpleOntologyTerm {
-        self.term.clone()
     }
 }
 

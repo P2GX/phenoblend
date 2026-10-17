@@ -135,16 +135,16 @@ impl PhenoblendSettings {
 fn get_config_path() -> Result<PathBuf, String> {
     match home_dir() {
         Some(mut home) => {
-            home.push(".phenoblendtk");
+            home.push(".phenoblend");
             Ok(home)
         }
-        None => Err(format!("Could not determine PhenoblendTK home directory"))
+        None => Err(format!("Could not determine Phenoblend home directory"))
     }
 }
 
 fn get_config_file() -> Result<PathBuf, String> {
     let mut config_file = get_config_path()?;
-    config_file.push("settings.toml"); // ~/.phenoblendtk/settings.toml
+    config_file.push("settings.toml"); // ~/.phenoblend/settings.toml
     Ok(config_file)
 }
 

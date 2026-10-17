@@ -1,10 +1,10 @@
-use std::{collections::HashMap, sync::{Arc, LazyLock}};
-use ontolius::{TermId, ontology::{OntologyTerms, csr::FullCsrOntology}, term::MinimalTerm};
+
+use ontolius::TermId;
 use serde::{Serialize, Deserialize};
 
-use std::collections::BTreeMap;
-use crate::{blend::upset_plot::UpsetData, util::serde_util::serialize_term_id_vec};
-use crate::{ model::simple_term::SimpleOntologyTerm};
+
+use crate::{ util::serde_util::serialize_term_id_vec};
+
 
 
 

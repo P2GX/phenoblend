@@ -1,50 +1,443 @@
-.gene-search-field { position: relative; max-width: 400px; }
-.gene-search-label { display: block; margin-bottom: 4px; font-weight: 500; }
+.genedisease-workspace {
+  max-width: 56rem;
+  margin: 2.5rem auto;
+  padding: 0 1.5rem;
+}
 
-.combobox-wrapper { position: relative; }
+// Workspace Header
+.workspace-header {
+  margin-bottom: 2rem;
 
-.combobox-wrapper input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 0.9rem;
-
-  &:focus {
-    outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 0.5rem;
+    letter-spacing: -0.02em;
   }
 }
 
+.workspace-header__description {
+  color: #64748b;
+  font-size: 1rem;
+  margin: 0 0 1.25rem;
+}
+
+// Dynamic Status Banner
+.workspace-header__status {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.875rem 1.25rem;
+  background-color: #eff6ff;
+  border: 1px solid #dbeafe;
+  border-left: 4px solid #2563eb;
+  border-radius: 0.625rem;
+  transition: all 0.3s ease;
+
+  .status-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #2563eb;
+    flex-shrink: 0;
+  }
+
+  .status-text {
+    font-size: 0.9rem;
+    color: #1e40af;
+    margin: 0;
+
+    strong {
+      font-weight: 600;
+    }
+  }
+
+  // Ready State Styling
+  &.status--ready {
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
+    border-left-color: #16a34a;
+
+    .status-icon {
+      color: #16a34a;
+    }
+
+    .status-text {
+      color: #166534;
+    }
+  }
+}
+
+// Gene Search Card
+.gene-search-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 0.875rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  margin-bottom: 2rem;
+}
+
+.gene-search-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.5rem;
+
+  .search-icon {
+    width: 1.1rem;
+    height: 1.1rem;
+    color: #64748b;
+  }
+}
+
+.combobox-wrapper {
+  position: relative;
+
+  input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    background-color: #f8fafc;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #2563eb;
+      background-color: #ffffff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+  }
+}
+
+// Autocomplete Dropdown
 .gene-options-list {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 0.375rem);
   left: 0;
   right: 0;
-  z-index: 20;
-  margin: 0;
-  padding: 4px 0;
-  list-style: none;
-  background: #fff;
+  background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  max-height: 240px;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  max-height: 16rem;
   overflow-y: auto;
+  z-index: 50;
+  padding: 0.375rem 0;
+  margin: 0;
+  list-style: none;
 }
 
 .gene-option {
-  padding: 8px 12px;
-  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem 1rem;
   font-size: 0.9rem;
+  color: #1e293b;
+  cursor: pointer;
 
-  &:hover, &.highlighted { background: #f1f5f9; }
+  .symbol-name {
+    font-weight: 500;
+  }
+
+  .select-badge {
+    font-size: 0.75rem;
+    color: #2563eb;
+    background: #eff6ff;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  &:hover, &.highlighted {
+    background-color: #f1f5f9;
+
+    .select-badge {
+      opacity: 1;
+    }
+  }
 }
 
 .gene-option-empty {
-  padding: 8px 12px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
   color: #94a3b8;
   font-style: italic;
-  font-size: 0.85rem;
+  text-align: center;
+}
+
+// Configured Gene Cards List
+.configured-genes-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  background-color: #f8fafc;
+  border: 2px dashed #e2e8f0;
+  border-radius: 0.875rem;
+
+  .empty-state-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-state-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #475569;
+    margin: 0 0 0.25rem;
+  }
+
+  .empty-state-subtitle {
+    font-size: 0.875rem;
+    color: #94a3b8;
+    margin: 0;
+  }
+}
+
+.gene-entry-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.875rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.gene-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+
+  .gene-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+
+    .gene-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: #e2e8f0;
+      color: #475569;
+      padding: 0.125rem 0.5rem;
+      border-radius: 0.25rem;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+  }
+}
+
+.gene-entry-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  .action-divider {
+    width: 1px;
+    height: 1.25rem;
+    background-color: #cbd5e1;
+  }
+}
+
+.btn-subtle {
+  background: none;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #2563eb;
+  cursor: pointer;
+  padding: 0.25rem 0.375rem;
+  border-radius: 0.25rem;
+
+  &:hover {
+    background-color: #eff6ff;
+  }
+}
+
+.btn-icon-danger {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  border-radius: 0.25rem;
+  transition: all 0.15s ease;
+
+  svg {
+    width: 1.15rem;
+    height: 1.15rem;
+  }
+
+  &:hover {
+    color: #dc2626;
+    background-color: #fef2f2;
+  }
+}
+
+// Disease Checklist Items
+.disease-checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.disease-checklist-item {
+  padding: 0.875rem 1.25rem;
+  transition: background-color 0.15s ease;
+
+  & + & {
+    border-top: 1px solid #f1f5f9;
+  }
+
+  &:hover {
+    background-color: #fafafa;
+  }
+
+  &.selected {
+    background-color: #f0f7ff;
+  }
+}
+
+.disease-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  cursor: pointer;
+  width: 100%;
+
+  .custom-checkbox {
+    width: 1.1rem;
+    height: 1.1rem;
+    margin-top: 0.125rem;
+    accent-color: #2563eb;
+    cursor: pointer;
+  }
+}
+
+.disease-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.disease-name {
+  font-size: 0.925rem;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.disease-meta {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.badge-tag {
+  font-size: 0.725rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+
+  &.disease-id {
+    background-color: #f1f5f9;
+    color: #475569;
+  }
+
+  &.association-type {
+    background-color: #fef3c7;
+    color: #92400e;
+  }
+}
+
+.disease-checklist-empty {
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+// Workspace Footer Step Bar
+.workspace-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.875rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.footer-hint {
+  font-size: 0.9rem;
+  color: #64748b;
+
+  strong {
+    color: #0f172a;
+  }
+
+  .ready-text {
+    color: #16a34a;
+    font-weight: 600;
+  }
+}
+
+.primary-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #2563eb;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.15);
+  transition: all 0.2s ease;
+
+  .btn-arrow {
+    width: 1.1rem;
+    height: 1.1rem;
+    transition: transform 0.2s ease;
+  }
+
+  &:hover:not(:disabled) {
+    background-color: #1d4ed8;
+    box-shadow: 0 4px 6px rgba(37, 99, 235, 0.25);
+
+    .btn-arrow {
+      transform: translateX(3px);
+    }
+  }
+
+  &:disabled {
+    background-color: #cbd5e1;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
 }

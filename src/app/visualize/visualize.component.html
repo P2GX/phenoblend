@@ -53,16 +53,10 @@
       }
        <div class="workspace-status-bar">
     <span class="status-icon">ℹ️</span>
-    <span>{{ annotationService.workspaceSummaryText() }}</span>
+    <span> {{ annotationService.workspaceSummaryText() }}</span>
 
   </div>
-  <div class="workspace-status-bar" style="margin-top: 4px;">
-    
-       <button class="btn btn-secondary" (click)="downloadSummary()" [disabled]="isLoading()">
-            Download summary
-          </button>
-
-  </div>
+  
 
   @if (isEnrichmentLoading()) {
   <div class="loading-state">

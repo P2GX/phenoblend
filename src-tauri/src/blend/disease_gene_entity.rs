@@ -1,8 +1,8 @@
 use std::{collections::{HashMap, HashSet},  sync::Arc};
 
-use ontolius::{TermId, ontology::{TaxonomyQuery, OntologyTerms, csr::FullCsrOntology}, term::MinimalTerm};
+use ontolius::{TermId, ontology::{TaxonomyQuery, csr::FullCsrOntology}};
 use serde::{Serialize, Serializer};
-use crate::{blend::dto::{GeneMatch, OverlapData, OverlapPlotPayload, ROOT_PHENOTYPE_TERM_ID, SIMPLE_ROOT_TERM, SpreadPlotPayload, TermMatches, UpsetPlotPayload}, hpo::hpo_util::ontolius_to_simple, hpoa::disease_model::GeneDiseaseAssociation, model::{proband::Proband, simple_term::SimpleOntologyTerm}};
+use crate::{blend::dto::{GeneMatch, OverlapData, OverlapPlotPayload, ROOT_PHENOTYPE_TERM_ID, SIMPLE_ROOT_TERM, TermMatches}, hpo::hpo_util::ontolius_to_simple, hpoa::disease_model::GeneDiseaseAssociation, model::{proband::Proband, simple_term::SimpleOntologyTerm}};
 use log::{trace};
 
 fn serialize_term_id_set<S>(ids: &HashSet<TermId>, serializer: S) -> Result<S::Ok, S::Error>
@@ -214,38 +214,6 @@ impl GeneDiseaseEntity {
             disease_hpo_ids: disease_hpo_ids
         })
     }
-
-
-    fn debug_print_term(tid: &TermId,
-        hpo: Arc<FullCsrOntology>, message: &str) {
-            match hpo.term_by_id(tid) {
-                Some(t) => { trace!("{}: {} ({})", message, t.name(), tid);},
-                None => { trace!("{}: Could not find label for {}", message, tid); }
-            }
-        }
-
-
-    /// Returns `true` if the gene-disease entity is implicitly or explicitly annotated
-    /// to `ppkt_tid`.
-    ///
-    /// By the true path rule, an annotation to a descendant also counts as an annotation
-    /// to the ancestor. For example, a disease annotated to "Nuclear cataract" is also
-    /// annotated to "Cataract", so a proband with "Cataract" is a perfect match.
-     pub fn is_perfect_match(
-        ppkt_tid: &TermId,
-        gde: &GeneDiseaseEntity,
-        hpo: Arc<FullCsrOntology>) -> bool {
-            let matched = if gde.disease_hpo_ids.contains(ppkt_tid) {
-                Some(ppkt_tid)
-            } else {
-                gde.disease_hpo_ids
-                    .iter()
-                    .find(|id| hpo.is_descendant_of(*id, ppkt_tid))
-            };
-           matched.is_some()
-    }
-
-
 
     pub fn get_overlap_matrix_payload(
         proband: Proband, 

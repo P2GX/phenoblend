@@ -1,15 +1,54 @@
 <div class="genedisease-workspace">
-  <h1>Genes and associated diseases</h1>
+  
+  <!-- Header & Instructions -->
+  <header class="workspace-header">
+    <h1>Genes and Associated Diseases</h1>
+    <p class="workspace-header__description">
+      Specify two or more gene–disease combinations to compare and analyze phenotype overlap.
+    </p>
 
-  <div class="gene-search-field">
-    <label for="geneSearchInput" class="gene-search-label">Search gene symbol</label>
+    <!-- Dynamic Feedback Callout -->
+    <div class="workspace-header__status" [class.status--ready]="genesWithSelections() >= 2">
+      <div class="status-icon">
+        @if (genesWithSelections() >= 2) {
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        } @else {
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        }
+      </div>
+
+      <p class="status-text">
+        @if (genesWithSelections() === 0) {
+          Use the search box below to find a gene symbol, then select its associated diseases.
+        } @else if (genesWithSelections() === 1) {
+          <strong>1 gene selected.</strong> Enter at least one more gene and select a disease to proceed.
+        } @else {
+          <strong>{{ genesWithSelections() }} genes configured.</strong> You are ready to proceed to visualization.
+        }
+      </p>
+    </div>
+  </header>
+
+  <!-- Gene Search Control -->
+  <div class="gene-search-card">
+    <label for="geneSearchInput" class="gene-search-label">
+      <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      Search Gene Symbol
+    </label>
+    
     <div class="combobox-wrapper">
       <input
         #geneInput
         id="geneSearchInput"
         type="text"
         [formControl]="control"
-        placeholder="e.g. LZTR1"
+        placeholder="Type a gene symbol (e.g. LZTR1, FGFR3)..."
         spellcheck="false"
         autocomplete="off"
         role="combobox"
@@ -30,66 +69,93 @@
               [class.highlighted]="i === highlightedIndex()"
               [attr.aria-selected]="i === highlightedIndex()"
               (mousedown)="selectGene(symbol); $event.preventDefault()">
-              {{ symbol }}
+              <span class="symbol-name">{{ symbol }}</span>
+              <span class="select-badge">Add</span>
             </li>
           } @empty {
-            <li class="gene-option-empty">No matching genes</li>
+            <li class="gene-option-empty">No matching genes found</li>
           }
         </ul>
       }
     </div>
   </div>
 
-  @if (geneEntries().length === 0) {
-    <p class="empty-state">No genes added yet. Search above to add one.</p>
-  }
-
-  @for (entry of geneEntries(); track entry.geneSymbol) {
-    <div class="gene-entry-card">
-      <div class="gene-entry-header">
-        <h2>{{ entry.geneSymbol }}</h2>
-        <div class="gene-entry-actions">
-          <button class="btn-text" (click)="selectAllDiseases(entry.geneSymbol)">Select all</button>
-          <button class="btn-text" (click)="clearAllDiseases(entry.geneSymbol)">Clear</button>
-          <button class="btn-icon" (click)="removeGene(entry.geneSymbol)" aria-label="Remove gene">
-            <app-icon name="close" [size]="20" />
-          </button>
-        </div>
+  <!-- Configured Gene Cards -->
+  <div class="configured-genes-section">
+    @if (geneEntries().length === 0) {
+      <div class="empty-state">
+        <div class="empty-state-icon">🧬</div>
+        <p class="empty-state-title">No genes added yet</p>
+        <p class="empty-state-subtitle">Search for a gene above to select disease associations.</p>
       </div>
+    }
 
-      <ul class="disease-checklist">
-        @for (assoc of entry.associations; track assoc.diseaseId) {
-          <li class="disease-checklist-item">
-            <label>
-              <input
-                type="checkbox"
-                [checked]="isDiseaseSelected(entry, assoc.diseaseId)"
-                (change)="toggleDisease(entry.geneSymbol, assoc.diseaseId)">
-              <span class="disease-label">{{ assoc.diseaseModel?.omimDiseaseName ?? assoc.diseaseId }}</span>
-              <small class="disease-id">{{ assoc.diseaseId }}</small>
-              <small class="association-type">{{ assoc.associationType }}</small>
-            </label>
-          </li>
-        } @empty {
-          <li class="disease-checklist-empty">No known disease associations.</li>
-        }
-      </ul>
-    </div>
-  }
+    @for (entry of geneEntries(); track entry.geneSymbol) {
+      <div class="gene-entry-card">
+        <div class="gene-entry-header">
+          <div class="gene-title-group">
+            <span class="gene-badge">Gene</span>
+            <h2>{{ entry.geneSymbol }}</h2>
+          </div>
 
-  <div class="workspace-footer">
-    <p class="gene-count-hint">
+          <div class="gene-entry-actions">
+            <button class="btn-subtle" (click)="selectAllDiseases(entry.geneSymbol)">Select All</button>
+            <button class="btn-subtle" (click)="clearAllDiseases(entry.geneSymbol)">Clear</button>
+            <span class="action-divider"></span>
+            <button class="btn-icon-danger" (click)="removeGene(entry.geneSymbol)" title="Remove gene" aria-label="Remove gene">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <ul class="disease-checklist">
+          @for (assoc of entry.associations; track assoc.diseaseId) {
+            <li class="disease-checklist-item" [class.selected]="isDiseaseSelected(entry, assoc.diseaseId)">
+              <label class="disease-checkbox-label">
+                <input
+                  type="checkbox"
+                  class="custom-checkbox"
+                  [checked]="isDiseaseSelected(entry, assoc.diseaseId)"
+                  (change)="toggleDisease(entry.geneSymbol, assoc.diseaseId)">
+                
+                <div class="disease-info">
+                  <span class="disease-name">{{ assoc.diseaseModel?.omimDiseaseName ?? assoc.diseaseId }}</span>
+                  <div class="disease-meta">
+                    <span class="badge-tag disease-id">{{ assoc.diseaseId }}</span>
+                    <span class="badge-tag association-type">{{ assoc.associationType }}</span>
+                  </div>
+                </div>
+              </label>
+            </li>
+          } @empty {
+            <li class="disease-checklist-empty">No known disease associations found for this gene.</li>
+          }
+        </ul>
+      </div>
+    }
+  </div>
+
+  <!-- Footer Step Navigation -->
+  <footer class="workspace-footer">
+    <div class="footer-hint">
       @if (genesWithSelections() < 2) {
-        Select at least one disease for {{ 2 - genesWithSelections() }} more gene{{ 2 - genesWithSelections() > 1 ? 's' : '' }} to continue.
+        <span>Select at least one disease for <strong>{{ 2 - genesWithSelections() }}</strong> more gene{{ 2 - genesWithSelections() > 1 ? 's' : '' }}</span>
       } @else {
-        {{ genesWithSelections() }} genes ready.
+        <span class="ready-text">✓ Ready to generate visualization</span>
       }
-    </p>
+    </div>
+
     <button
-      class="btn-outline-primary"
+      class="primary-action-btn"
       [disabled]="!canProceed()"
       (click)="goToVisualization()">
-      Next: Visualize
+      <span>Next: Visualize</span>
+      <svg class="btn-arrow" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+      </svg>
     </button>
-  </div>
+  </footer>
+
 </div>
