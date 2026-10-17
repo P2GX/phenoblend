@@ -412,12 +412,12 @@ async fn export_svg_to_pdf(
     default_filename: String,
 ) -> Result<bool, String> {
     // 1. Parse the SVG into a usvg tree
-    let mut fontdb = svg2pdf::usvg::fontdb::Database::new();
-    fontdb.load_system_fonts();
-    let fontdb = Arc::new(fontdb);
+    let mut font_db = svg2pdf::usvg::fontdb::Database::new();
+    font_db.load_system_fonts();
+    let font_db = Arc::new(font_db);
 
     let opt = svg2pdf::usvg::Options {
-        fontdb: fontdb.clone(),
+        fontdb: font_db.clone(),
         ..Default::default()
     };
 

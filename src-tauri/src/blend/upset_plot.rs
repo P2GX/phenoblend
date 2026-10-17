@@ -109,7 +109,7 @@ fn is_uninformative(t: &TermId) -> bool {
 }
 
 /// Term with label; falls back to the root term if the ontology does not know it.
-fn simple_term(hpo: &FullCsrOntology, tid: &TermId) -> SimpleOntologyTerm {
+pub(crate) fn simple_term(hpo: &FullCsrOntology, tid: &TermId) -> SimpleOntologyTerm {
     ontolius_to_simple(hpo, tid).unwrap_or_else(|e| {
         log::error!("{e}; substituting the root term");
         SIMPLE_ROOT_TERM.clone()

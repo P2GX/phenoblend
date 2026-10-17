@@ -14,6 +14,7 @@ use rand::rngs::StdRng;
 
 use crate::blend::disease_gene_entity::GeneDiseaseEntity;
 use crate::blend::dto::{OverlapData, PhenoBlendAnalysis, SpreadPlotPayload, UpsetPlotPayload};
+use crate::blend::spread_plot::{build_spread_payload, check_plots_agree};
 use crate::enrichment::dto::DuoEnrichmentSummary;
 use crate::enrichment::gdannotation_source::{GeneDiseaseAnnotationSource, OntoliusDescendants};
 use crate::enrichment::melded_ppkt::MeldedPpkt;
@@ -434,12 +435,11 @@ impl PhenoblendSingleton {
             })
             .collect();
         let upset = crate::blend::upset_plot::build_upset_data(entities, &observed, hpo.as_ref())?;
-         let spread = crate::blend::spread_plot::get_spread_plot_payload(
-            self.individual.clone(), 
-            &symbols,
-            entities, 
-            &hpo
-        )?;
+        let mut genotypes: Vec<String> = entities.iter().map(|g| g.gene_symbol.clone()).collect();
+        genotypes.sort();
+        genotypes.dedup();
+        let spread = build_spread_payload(&observed, &genotypes, entities, hpo.as_ref())?;
+        check_plots_agree(&genotypes, &upset, &spread)?; 
         Ok(PhenoBlendAnalysis { term_matches, gene_annotations, overlap, upset, spread })
     }
 

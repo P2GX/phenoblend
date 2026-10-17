@@ -180,6 +180,46 @@
 
 
 </section>
+<section>
+  <header>
+    <title>Spread plot</title>
+  </header>
+  @if (spread(); as sp) {
+  <h3>Organ systems (spread plot): {{ sp.nPpktTerms }} observed terms</h3>
+  @for (cat of sp.categories; track cat.id) {
+    <details>
+      <summary>
+        {{ cat.name }}: patient {{ cat.ppktValue | percent: '1.0-0' }}
+        ({{ cat.ppktTerms?.length ?? 0 }} of {{ sp.nPpktTerms }} terms)
+      </summary>
+      <h5>Patient</h5>
+      <ul>
+        @for (t of cat.ppktTerms ?? []; track t.termId) {
+          <li><code>{{ t.termId }}</code> {{ t.termLabel }}</li>
+        }
+      </ul>
+      @for (s of cat.geneTerms ?? []; track s.series; let i = $index) {
+        <h5>{{ s.series }}: {{ s.terms.length }} of {{ sp.seriesSummaries?.[i]?.nTerms ?? 0 }} terms</h5>
+        <ul>
+          @for (t of s.terms; track t.termId) {
+            <li><code>{{ t.termId }}</code> {{ t.termLabel }}</li>
+          } @empty {
+            <li>none</li>
+          }
+        </ul>
+      }
+    </details>
+  }
+  @if (sp.ppktUncategorized?.length) {
+    <h4>Observed terms in no organ system</h4>
+    <ul>
+      @for (t of sp.ppktUncategorized; track t.termId) {
+        <li><code>{{ t.termId }}</code> {{ t.termLabel }}</li>
+      }
+    </ul>
+  }
+}
+</section>
 
 } @else {
   <p>No notebook loaded.</p>

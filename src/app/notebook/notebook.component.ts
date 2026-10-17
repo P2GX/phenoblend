@@ -1,13 +1,13 @@
 // notebook.component.ts
 import { Component, computed, inject, Signal} from '@angular/core';
-import { DatePipe, JsonPipe } from '@angular/common';
+import { DatePipe, JsonPipe, PercentPipe } from '@angular/common';
 import { AppStatusService } from '../services/app-status-service';
 import { GeneMatch, OverlapData, PhenoBlendAnalysis, SimpleOntologyTerm, TermMatches, UpsetData } from '../models/notebook';
 
 @Component({
   selector: 'app-notebook',
   standalone: true,
-  imports: [DatePipe, JsonPipe],
+  imports: [DatePipe, PercentPipe],
   templateUrl: './notebook.component.html',
   styleUrls: ['./notebook.component.scss'],
 })
@@ -25,6 +25,7 @@ export class NotebookComponent {
   readonly overlap: Signal<OverlapData|null> = computed(() => {
     return this.analysis()?.overlap ?? null;
   })
+  readonly spread = computed(() => this.analysis()?.spread ?? null);
 
    // Look up the GeneMatch for a specific entity/gene symbol under this HPO term column
   protected getEntityMatchForTerm(termCol: TermMatches, entity: string): GeneMatch | undefined {

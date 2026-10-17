@@ -75,21 +75,21 @@ export interface UpsetData {
   nProbandTerms: number;
 }
 
+export interface SeriesTerms { series: string; terms: SimpleOntologyTerm[]; }
+export interface SeriesSummary { series: string; nTerms: number; uncategorized: SimpleOntologyTerm[]; }
 export interface SpreadPlotCategory {
-  id: string;
-  name: string;
-  /** Optional field mapping to `alias?: string` */
-  alias?: string;
-  /** Patient/Phenopacket fraction (`ppktValue`) */
+  id: string; name: string; alias?: string | null;
   ppktValue: number;
-  /** Array of values for each gene combo/series (`geneValues`) */
-  geneValues: number[];
+  geneValues: (number | null)[];
+  ppktTerms?: SimpleOntologyTerm[];
+  geneTerms?: SeriesTerms[];
 }
-
 export interface SpreadPlotPayload {
-  /** e.g., ["Ppkt", "MBNL1", "DMPK", "MBNL1+DMPK"] */
   seriesLabels: string[];
   categories: SpreadPlotCategory[];
+  ppktUncategorized?: SimpleOntologyTerm[];
+  nPpktTerms: number;
+  seriesSummaries?: SeriesSummary[];
 }
 
 export interface PhenoBlendAnalysis {
