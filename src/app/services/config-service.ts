@@ -93,15 +93,7 @@ export class ConfigService {
     return invoke<null>('add_observed_hpos_from_ner', {observed});
   }
 
-  async downloadExcelSummary(
-    dataType: string,
-    annotations: Record<string, GeneDiseaseAssociation[]>,
-  ): Promise<void> {
-    await invoke<void>('download_excel_summary', {
-      dataType,
-      annotations,
-    });
-  }
+
 
   /**
    * Runs the duo-enrichment test for every pairwise combination of genes

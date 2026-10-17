@@ -72,7 +72,6 @@ pub fn run() {
             analyze_duo_enrichment,
             autocomplete_gene_symbol,
             check_initialization_status,
-            download_excel_summary,
             export_svg_to_pdf,
             get_hpo_autocomplete,
             get_hpo_modifiers,
@@ -160,6 +159,11 @@ async fn load_hpo(
     Ok(())
 }
 
+#[tauri::command]
+fn check_initialization_status(state: tauri::State<'_, Arc<AppState>>) -> Result<InitializationStatusDto, String> {
+    let singleton = state.phenoblend.lock().map_err(|e| e.to_string())?;
+    Ok(singleton.initialization_status())
+}
 
 #[tauri::command]
 async fn add_observed_hpos_from_ner(
@@ -300,26 +304,6 @@ async fn mine_clinical_text(
         .mine_clinical_text(&text)
 }
 
-
-#[tauri::command]
-async fn check_initialization_status(
-    state: tauri::State<'_, Arc<AppState>>,
-) -> Result<InitializationStatusDto, String> {
-    let singleton = state.phenoblend.lock()
-        .map_err(|_| "Failed to lock state".to_string())?;
-
-    Ok(InitializationStatusDto {
-        hpo_loaded: singleton.hpo.is_some(),
-        hpo_terms: singleton.hpo.as_ref().map(|h| h.len()).unwrap_or(0), // adjust based on your ontology structure length method
-        hpoa_loaded: singleton.omim_disease_models.is_some(),
-        hpoa_diseases: singleton.omim_disease_models.as_ref().map(|m| m.len()).unwrap_or(0),
-        g2d_loaded: singleton.gene_to_disease_d.is_some(),
-        n_genes: singleton.gene_to_disease_d.as_ref().map(|g| g.len()).unwrap_or(0),
-    })
-}
-
-
-
 #[tauri::command]
 async fn get_hpo_parent_and_children_terms(
     state: tauri::State<'_, Arc<AppState>>,
@@ -451,38 +435,6 @@ async fn export_svg_to_pdf(
         None => Ok(false), // user cancelled — not an error
     }
 }
-
-
-#[tauri::command]
-async fn download_excel_summary(
-    app: tauri::AppHandle,
-    state: tauri::State<'_, Arc<AppState>>,
-    data_type: String,
-    annotations: HashMap<String, Vec<GeneDiseaseAssociation>>) -> Result<(), String>
-{
-    let mut singleton = state.phenoblend.lock()
-        .map_err(|_| "Failed to lock state".to_string())?;
-    let fname = format!("{}-annotations.xlsx", data_type);
-    let file_path = app
-        .dialog()
-        .file()
-        .add_filter("Excel Workbook", &["xlsx"])
-        .set_file_name(fname)
-        .blocking_save_file();
-
-    let Some(path) = file_path else {
-        return Err("Export cancelled".to_string());
-    };
-
-    let path_str = path.to_string();
-    singleton.output_excel(data_type, annotations, path_str)?;
-
-    Ok(())
-
-}
-
-
-
 
 const DEFAULT_N_SIM: usize = 100_000;
 

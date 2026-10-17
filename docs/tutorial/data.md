@@ -26,5 +26,6 @@ It is advisable (but not required) to download all three files to the same direc
 
 
 
-- Loading phenopacket or text mining
+![Home: Load the required data files](./img/home.png)
+  *Figure 1. After successfully loading the three required input files, the home page will look like this.*
 

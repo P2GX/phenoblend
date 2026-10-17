@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
 
@@ -20,7 +20,8 @@ import { ConfigService } from '../services/config-service';
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
-export class HomeComponent {
+export class HomeComponent implements OnInit {
+
 
 
   private router= inject(Router);
@@ -29,7 +30,19 @@ export class HomeComponent {
   private configService = inject(ConfigService);
   private cancelMessage = signal<string | null>(null);
 
-
+  async ngOnInit(): Promise<void> {
+    const status = this.statusService;
+    const version = status.hpoVersion();
+    if (version == '') {
+      try {
+         const config = await this.configService.checkInitializationStatus();
+         const hpo_v = config.hpo_version;
+         this.statusService.setHpoVersion(hpo_v);
+      } catch (error) {
+        this.notificationService.showError(String(error));
+      }
+    }   
+  }
 
   hpoMessage = computed(() => {
     const cancel = this.cancelMessage();
@@ -52,7 +65,7 @@ export class HomeComponent {
       const status = this.statusService;
       if (status.hpoaLoaded()) {
         const count = status.nHpoaDisease();
-        return `Loaded HPOAs (n=${count})`;
+        return `Loaded HPOAs (n=${count} disease models)`;
       } else if (status.hpoaLoading()) {
         return "Loading phenotype.hpoa ...";
       } else if (cancel) return cancel;
@@ -64,7 +77,7 @@ export class HomeComponent {
       const status = this.statusService;
       if (status.g2dLoaded()) {
         const nGenes = status.nGenes();
-        return `Loaded (${nGenes} gene/disease annotations)`;
+        return `Loaded gene/disease annotations (n=${nGenes})`;
       } else if (status.g2dLoading()) {
         return "loading g2d file";
       } else if (cancel) {

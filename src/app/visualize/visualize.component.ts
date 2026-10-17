@@ -191,19 +191,6 @@ export class PhenotypeProfileVisualizerComponent implements OnInit {
     }
   }
 
-  downloadSummary() {
-    const dataType: VisualizationType = this.activeView();
-    console.log("Download summary datat=", dataType);
-    const recordData = Object.fromEntries(
-      this.annotationService.selectedAssociations(),
-    );
-    try {
-      this.configService.downloadExcelSummary(dataType, recordData);
-    } catch (err) {
-      this.notificationService.showError(`${err}`);
-    }
-  }
-
   async runDuoEnrichment(): Promise<void> {
     this.isEnrichmentLoading.set(true);
     this.enrichmentError.set(null);

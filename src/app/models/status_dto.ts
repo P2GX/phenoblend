@@ -32,6 +32,7 @@ export function defaultStatusDto(): StatusDto {
 export interface InitializationStatusDto {
   hpo_loaded: boolean;
   hpo_terms: number;
+  hpo_version: string;
   hpoa_loaded: boolean;
   hpoa_diseases: number;
   g2d_loaded: boolean;

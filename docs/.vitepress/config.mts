@@ -26,6 +26,7 @@ export default defineConfig({
             items: [
               { text: 'HPO(A) Data', link: '/tutorial/data' },
               { text: 'Input data', link: '/tutorial/input' },
+              { text: 'Genes and diseases', link: '/tutorial/genes' },
               { text: 'Visualizing data', link: '/tutorial/visualizations' },
               { text: 'Overlap plot', link: '/tutorial/overlap' },
               { text: 'Upset plot', link: '/tutorial/upset' },

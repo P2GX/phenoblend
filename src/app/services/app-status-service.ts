@@ -143,6 +143,7 @@ private async registerOntologyListener(config: {
       this.ngZone.run(() => {
         this.hpoLoaded.set(status.hpo_loaded);
         this.nHpoTerms.set(status.hpo_terms);
+        this.hpoVersion.set(status.hpo_loaded ? status.hpo_version || 'n/a' : '');   // new
 
         this.hpoaLoaded.set(status.hpoa_loaded);
         this.nHpoaDisease.set(status.hpoa_diseases);
@@ -155,5 +156,8 @@ private async registerOntologyListener(config: {
     }
   }
     
+  public setHpoVersion(v: string): void {
+    this.hpoVersion.set(v);
+  }
 
 }

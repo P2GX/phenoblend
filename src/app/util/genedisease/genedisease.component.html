@@ -121,11 +121,11 @@
                   (change)="toggleDisease(entry.geneSymbol, assoc.diseaseId)">
                 
                 <div class="disease-info">
-                  <span class="disease-name">{{ assoc.diseaseModel?.omimDiseaseName ?? assoc.diseaseId }}</span>
+                  <span class="disease-name">{{ assoc.diseaseModel?.omimDiseaseName ?? assoc.diseaseId }}
                   <div class="disease-meta">
                     <span class="badge-tag disease-id">{{ assoc.diseaseId }}</span>
                     <span class="badge-tag association-type">{{ assoc.associationType }}</span>
-                  </div>
+                  </div></span>
                 </div>
               </label>
             </li>

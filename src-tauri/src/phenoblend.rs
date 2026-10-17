@@ -6,6 +6,7 @@ use fenominal::{AutoCompleter, Fenominal, FenominalSentence, OntologyMatch};
 use ga4ghphetools::{dto::hpo_term_dto::HpoTermDuplet, load_ontology};
 use ga4ghphetools::HierarchyMapItem;
 use itertools::Itertools;
+use ontolius::ontology::{MetadataAware, OntologyTerms};
 use ontolius::{TermId,  ontology::csr::FullCsrOntology};
 use phenopackets::schema::v2::Phenopacket;
 use rand::SeedableRng;
@@ -21,6 +22,7 @@ use crate::enrichment::melded_ppkt::MeldedPpkt;
 use crate::enrichment::test::{EnrichmentTest, Method};
 use crate::excel::payload_to_excel::export_upset_plot_to_xlsx;
 use crate::model::Notebook;
+use crate::model::status::InitializationStatusDto;
 use crate::{blend::dto::OverlapPlotPayload, hpoa::disease_model::SimpleDiseaseModel, model::{proband::Proband, simple_term::SimpleOntologyTerm}};
 use crate::hpoa::disease_model::GeneDiseaseAssociation;
 use crate::util::settings::PhenoblendSettings;
@@ -316,24 +318,16 @@ impl PhenoblendSingleton {
         self.individual.observed_hpos.len()
     }
 
-    pub fn output_excel(
-        &mut self, 
-        data_type: String, 
-        annotations: HashMap<String, Vec<GeneDiseaseAssociation>>, 
-        path_str: String) 
-    -> Result<(), String> {
-        if data_type == "overlap" {
-            let payload = self.calculate_overlap_matrix(annotations)?;
-            crate::excel::payload_to_excel::export_overlap_plot_to_xlsx(&payload, &path_str)
-                .map_err(|e| format!("Could not output overlap Excel file: {e}"))?;
-            Ok(())
-        } else if data_type == "upset" {
-            let payload = self.get_upset_plot_payload()?;
-            export_upset_plot_to_xlsx(&payload, &path_str)
-                .map_err(|e| format!("Could not output upset Excel file: {e}"))?;
-            Ok(())
-        } else {
-            Err(format!("{data_type} excel export not supported yet"))
+   /// What the frontend shows about the loaded resources, read from the current state.
+    pub fn initialization_status(&self) -> InitializationStatusDto {
+        InitializationStatusDto {
+            hpo_loaded: self.hpo.is_some(),
+            hpo_terms: self.hpo.as_ref().map_or(0, |o| o.len()),
+            hpo_version: self.hpo.as_ref().map_or("n/a".to_string(), |o| o.version().to_string()),
+            hpoa_loaded: self.omim_disease_models.is_some(),
+            hpoa_diseases: self.omim_disease_models.as_ref().map_or(0, |omim_d|omim_d.len()),
+            g2d_loaded: self.gene_to_disease_d.is_some(),
+            n_genes: self.gene_to_disease_d.as_ref().map_or(0, |gd_d|gd_d.len()),
         }
     }
 
