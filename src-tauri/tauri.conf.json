@@ -1,19 +1,19 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "phenoblendtk",
-  "version": "0.4.1",
-  "identifier": "org.p2gx.phenoblendtk",
+  "productName": "phenoblend",
+  "version": "0.4.2",
+  "identifier": "org.p2gx.phenoblend",
   "build": {
-    "beforeDevCommand": "npx nx serve phenoblendtk --configuration=development  --no-cloud",
+    "beforeDevCommand": "npx nx serve phenoblend --configuration=development  --no-cloud",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npx nx build phenoblendtk --configuration=production  --no-cloud",
-    "frontendDist": "../dist/phenoblendtk/browser"
+    "beforeBuildCommand": "npx nx build phenoblend --configuration=production  --no-cloud",
+    "frontendDist": "../dist/phenoblend/browser"
   },
   "app": {
     "windows": [
       {
         "label": "main",
-        "title": "phenoblendtk",
+        "title": "phenoblend",
         "width": 1400,
         "height": 950,
         "resizable": true,

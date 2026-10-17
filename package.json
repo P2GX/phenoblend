@@ -1,10 +1,10 @@
 {
-  "name": "phenoblendtk",
-  "version": "0.4.1",
+  "name": "phenoblend",
+  "version": "0.4.2",
   "scripts": {
     "ng": "ng",
-    "start": "nx serve phenoblendtk --port 1420",
-    "build": "nx build phenoblendtk --base-href ./",
+    "start": "nx serve phenoblend --port 1420",
+    "build": "nx build phenoblend --base-href ./",
     "watch": "nx build --watch --configuration development",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",

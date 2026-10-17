@@ -52,6 +52,69 @@ Please provide steps to reproduce the issue along with your operating system and
 * [GitHub Issues Tracker](https://github.com/P2GX/phenoblend/issues)
 
 
+
+## Building from Source
+
+This will work on any OS.
+
+```bash
+git clone https://github.com/P2GX/phenoblend.git
+cd phenoblend
+npm install
+npm run tauri build
+```
+The built installers will appear under:
+```bash
+src-tauri/target/release/bundle/
+``` 
+
+
+## Prerequisites
+
+### Node.js (at least version 18) and npm (at least version 9). 
+
+You can check if you have them installed via
+
+```bash
+node -v
+npm -v
+``` 
+
+If necessary, go to [Node.js](https://nodejs.org) to install these programs.
+
+### Rust and Cargo
+
+See [rustup](https://rustup.rs) if needed.
+
+### Git 
+
+If you do not have git installed, replace the cloning step with a download of the archive.
+
+## Platform-specific code
+Please report any dependencies not listed above.
+
+# Running the app
+
+1. Clone from GitHub
+```bash 
+git clone https://github.com/P2GX/phenoblend.git
+cd phenoblend
+```
+
+2. Install npm dependencies
+From within the phenoblend directory, enter
+```bash
+npm install
+```
+
+3. Running the app
+```bash
+npm run tauri dev
+```
+
+This will run the application.
+
+
 ### Documentation
 
 Phenoblend's documentation is created using vitepress. It can be run locally as follows.

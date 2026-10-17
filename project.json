@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/nx/schemas/project-schema.json",
-  "name": "phenoblendtk",
+  "name": "phenoblend",
   "projectType": "application",
   "sourceRoot": "src",
   "prefix": "app",
@@ -13,7 +13,7 @@
     "build": {
       "executor": "@angular-devkit/build-angular:application",
       "options": {
-        "outputPath": "dist/phenoblendtk",
+        "outputPath": "dist/phenoblend",
         "index": "src/index.html",
         "browser": "src/main.ts",
         "polyfills": ["zone.js"],
@@ -65,10 +65,10 @@
       },
       "configurations": {
         "production": {
-          "buildTarget": "phenoblendtk:build:production"
+          "buildTarget": "phenoblend:build:production"
         },
         "development": {
-          "buildTarget": "phenoblendtk:build:development"
+          "buildTarget": "phenoblend:build:development"
         }
       },
       "defaultConfiguration": "development"

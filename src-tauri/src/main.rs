@@ -3,5 +3,5 @@
 
 fn main() {
     
-    phenoblendtk_lib::run()
+    phenoblend_lib::run()
 }

@@ -1885,6 +1885,7 @@ dependencies = [
 [[package]]
 name = "ga4ghphetools"
 version = "0.7.12"
+source = "git+https://github.com/P2GX/ga4ghphetools.git?tag=0.7.12#501ce0fdbab8a4b1a1fb2bea1f2211395fba2876"
 dependencies = [
  "calamine",
  "chrono",
@@ -3666,6 +3667,7 @@ dependencies = [
 [[package]]
 name = "oboannotation"
 version = "0.2.1-dev0"
+source = "git+https://github.com/P2GX/oboannotation?tag=v0.2.1-dev0#74c10c8fb00d08cd8cdbfb8025c30efc09a95a96"
 dependencies = [
  "ontolius",
  "regex",
@@ -3922,8 +3924,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "phenoblendtk"
-version = "0.4.1"
+name = "phenoblend"
+version = "0.4.2"
 dependencies = [
  "chrono",
  "csv",
@@ -4675,11 +4677,11 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.13.4"
+version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "219c5811de6525e5416c7d5d53bb656d3afdbc6c5af816e0802bcfa42dbdc1c3"
+checksum = "16a1cfa75cc186dd73d5818e510e042e40927bccc9c236b061cea97e1eb08029"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.1",
  "bytes",
  "encoding_rs",
  "futures-channel",
