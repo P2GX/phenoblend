@@ -36,8 +36,11 @@ export class HomeComponent {
     const status = this.statusService;
     if (status.hpoLoaded()) {
       const version = status.hpoVersion();
+      console.log("Version=", version);
       const count = status.nHpoTerms();
-      return version && count ? `${version} (${count})` : 'Loaded';
+       console.log("Count=", count);
+       const message = `Loaded (${count} terms; version: ${version})`;
+      return message;
     } else if (status.hpoLoading()) {
       return "Loading hp.json ...";
     } else if (cancel) return cancel;
@@ -48,9 +51,8 @@ export class HomeComponent {
       const cancel = this.cancelMessage();
       const status = this.statusService;
       if (status.hpoaLoaded()) {
-        const version = status.hpoaVersion();
         const count = status.nHpoaDisease();
-        return version && count ? `${version} (${count})` : 'Loaded';
+        return `Loaded HPOAs (n=${count})`;
       } else if (status.hpoaLoading()) {
         return "Loading phenotype.hpoa ...";
       } else if (cancel) return cancel;
@@ -61,7 +63,8 @@ export class HomeComponent {
       const cancel = this.cancelMessage();
       const status = this.statusService;
       if (status.g2dLoaded()) {
-        return "g2d file loaded";
+        const nGenes = status.nGenes();
+        return `Loaded (${nGenes} gene/disease annotations)`;
       } else if (status.g2dLoading()) {
         return "loading g2d file";
       } else if (cancel) {
@@ -101,29 +104,23 @@ export class HomeComponent {
     }
 
     async loadGeneToDisease(): Promise<void> {
-    console.log("loadGeneToDisease");
-    console.log("before await");
+      try {
+        await this.configService.loadGeneToDisease();
+        this.notificationService.showSuccess("Loaded gene-to-disease file");
+      } catch (error) {
+        console.error("Caught error:", error);
 
-    try {
-      await this.configService.loadGeneToDisease();
-
-      console.log("after await");
-
-      this.notificationService.showSuccess("Loaded gene-to-disease file");
-    } catch (error) {
-      console.error("Caught error:", error);
-
-      this.notificationService.showError(
-        `Failed to load Gene to Disease file: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-    }
-
-    console.log("function finished");
+        this.notificationService.showError(
+          `Failed to load Gene to Disease file: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
   }
 
-
+   protected proceedToDataEntryWindow(): void {
+    this.router.navigate(['/newppkt']);
+  }
 
 
 }

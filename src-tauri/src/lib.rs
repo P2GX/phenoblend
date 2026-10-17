@@ -11,6 +11,7 @@ mod util;
 pub mod tests;
 
 
+use ontolius::ontology::MetadataAware;
 use serde::{self,Serialize};
 
 use fenominal::OntologyMatch;
@@ -37,13 +38,13 @@ use tauri_plugin_log::{Target, TargetKind};
 
 
 struct AppState {
-    phenoblendtk: Mutex<PhenoblendSingleton>,
+    phenoblend: Mutex<PhenoblendSingleton>,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app_state = Arc::new(AppState {
-        phenoblendtk: Mutex::new(PhenoblendSingleton::new()),
+        phenoblend: Mutex::new(PhenoblendSingleton::new()),
     });
     let log_level = log::LevelFilter::Trace;
 
@@ -112,7 +113,7 @@ fn ingest_phenopacket(
     ppkt_string: String
 ) -> Result<(), String> {
     let result: Result<Notebook, String> = (|| {
-        let mut singleton = state.phenoblendtk.lock().map_err(|e|e.to_string())?;
+        let mut singleton = state.phenoblend.lock().map_err(|e|e.to_string())?;
         let phenopacket = crate::hpo::ppkt_loader::load_from_json(&ppkt_string)?;
         singleton.ingest_ppkt(phenopacket)?;
         Ok(singleton.notebook_ref()?.clone())
@@ -141,12 +142,13 @@ async fn load_hpo(
     pick_file_and_process(app, "hpo-load-event", move |hpo_json_path, app_handle| async move {
         match load_ontology(&hpo_json_path) {
             Ok(ontology) => {
-                let mut singleton = state_handle.phenoblendtk.lock().unwrap();
+                let mut singleton = state_handle.phenoblend.lock().unwrap();
                 let n_terms = ontology.len();
+                let version = ontology.version().to_string();
                 singleton.set_hpo(ontology, &hpo_json_path);
                 let _ = app_handle.emit(
                     "hpo-load-event", 
-                    OntologyLoadEvent::success("HPO loaded".to_string(), n_terms)
+                    OntologyLoadEvent::success(version, n_terms)
                 );
             },
             Err(e) => { 
@@ -165,7 +167,7 @@ async fn add_observed_hpos_from_ner(
     observed: Vec<String>
 ) -> Result<(), String>{
     let state_handle = state.inner().clone();
-    let mut singleton = state_handle.phenoblendtk.lock().map_err(|e| e.to_string())?;
+    let mut singleton = state_handle.phenoblend.lock().map_err(|e| e.to_string())?;
     singleton.add_observed_hpos_from_ner(observed)?;
     Ok(())
 }
@@ -176,11 +178,11 @@ async fn load_hpoas(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> Result<(), String> {
  let state_handle = state.inner().clone();
-    let _ = app.emit("maxo-load-event", OntologyLoadEvent::loading());
+    let _ = app.emit("hpoa-load-event", OntologyLoadEvent::loading());
     pick_file_and_process(app, "hpoa-load-event", move |hpoa_path, app_handle| async move {
         match crate::hpoa::hpoa_ingest::load_hpoa_d(&hpoa_path) {
             Ok(disease_model_map) => {
-                let mut singleton = state_handle.phenoblendtk.lock().unwrap();
+                let mut singleton = state_handle.phenoblend.lock().unwrap();
                 let n_terms = disease_model_map.len();
                 singleton.set_hpoa_d(disease_model_map, &hpoa_path);
                 let _ = app_handle.emit(
@@ -208,7 +210,7 @@ async fn load_gene_disease_associations(
     pick_file_and_process(app, "g2d-load-event", move |g2d_path, app_handle| async move {
         match crate::hpoa::gene_to_disease::load_gene_disease_associations(&g2d_path) {
             Ok(g2d) => {
-                let mut singleton = state_handle.phenoblendtk.lock().unwrap();
+                let mut singleton = state_handle.phenoblend.lock().unwrap();
                 let n_terms = g2d.len();
                 singleton.set_gene_to_disease(g2d, &g2d_path);
                 let _ = app_handle.emit(
@@ -231,7 +233,7 @@ fn get_overlap_plot(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> Result<OverlapPlotPayload, String> {
     
-    let singleton = state.phenoblendtk.lock().map_err(|e| e.to_string())?;
+    let singleton = state.phenoblend.lock().map_err(|e| e.to_string())?;
     singleton.get_overlap_plot_payload()
 }
 
@@ -240,7 +242,7 @@ fn get_upset_plot_payload(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> Result<UpsetPlotPayload, String> {
     let state_handle = state.inner().clone();
-    let singleton = state_handle.phenoblendtk.lock().map_err(|e| e.to_string())?;
+    let singleton = state_handle.phenoblend.lock().map_err(|e| e.to_string())?;
     singleton.get_upset_plot_payload()
 }
 
@@ -248,7 +250,7 @@ fn get_upset_plot_payload(
 fn get_spread_plot_payload( state: tauri::State<'_, Arc<AppState>>,
 ) -> Result<SpreadPlotPayload, String> {
     let state_handle = state.inner().clone();
-    let singleton = state_handle.phenoblendtk.lock().map_err(|e| e.to_string())?;
+    let singleton = state_handle.phenoblend.lock().map_err(|e| e.to_string())?;
     singleton.get_spread_plot_payload()
   }
   
@@ -258,7 +260,7 @@ fn get_observed_hpo_count( state: tauri::State<'_, Arc<AppState>>,
 ) -> usize {
     let state_handle = state.inner().clone();
     // We use this to show the number of HPOs in. the GUI. If this fails, just return zero, but we never expect this to happen
-    let singleton = match state_handle.phenoblendtk.lock() {
+    let singleton = match state_handle.phenoblend.lock() {
         Ok(guard) => guard,
         Err(_) => return 0,
     };
@@ -273,7 +275,7 @@ fn get_hpo_autocomplete(
     state: tauri::State<'_, Arc<AppState>>,
     query: String
 ) -> Vec<OntologyMatch> {
-    let singleton = match state.phenoblendtk.lock() {
+    let singleton = match state.phenoblend.lock() {
         Ok(s) => s,
         Err(_) => return vec![],
     };
@@ -290,7 +292,7 @@ async fn mine_clinical_text(
     state: tauri::State<'_, Arc<AppState>>,
     text: String,
 ) -> Result<Vec<FenominalSentence>, String> {
-    let singleton = match state.phenoblendtk.lock() {
+    let singleton = match state.phenoblend.lock() {
         Ok(s) => s,
         Err(_) => return Err("Failed to acquire application state lock".to_string()),
     };
@@ -303,7 +305,7 @@ async fn mine_clinical_text(
 async fn check_initialization_status(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> Result<InitializationStatusDto, String> {
-    let singleton = state.phenoblendtk.lock()
+    let singleton = state.phenoblend.lock()
         .map_err(|_| "Failed to lock state".to_string())?;
 
     Ok(InitializationStatusDto {
@@ -323,7 +325,7 @@ async fn get_hpo_parent_and_children_terms(
     state: tauri::State<'_, Arc<AppState>>,
     term_id: &str,
 ) -> Result<HierarchyMapItem, String> {
-    let singleton = state.phenoblendtk.lock()
+    let singleton = state.phenoblend.lock()
         .map_err(|_| "Failed to lock state".to_string())?;
     singleton.get_hpo_parent_and_children_terms(term_id)
 }
@@ -349,7 +351,7 @@ impl From<HpoTermDuplet> for HpoTermMinimalDto {
 async fn get_hpo_modifiers(
     state: tauri::State<'_, Arc<AppState>>
 ) -> Result<Vec<HpoTermMinimalDto>, String> {
-    let singleton = state.phenoblendtk.lock()
+    let singleton = state.phenoblend.lock()
         .map_err(|_| "Failed to lock state".to_string())?;
     let duplets = singleton.get_modifiers()?;
 
@@ -361,7 +363,7 @@ async fn get_hpo_modifiers(
 
 #[tauri::command]
 async fn perform_hpo_autocomplete(state: tauri::State<'_, Arc<AppState>>, query: String) -> Result<Vec<OntologyMatch>, String> {
-    let singleton = state.phenoblendtk.lock()
+    let singleton = state.phenoblend.lock()
         .map_err(|_| "Failed to lock state".to_string())?;
     singleton.perform_hpo_autocomplete(query)
 }
@@ -372,7 +374,7 @@ async fn autocomplete_gene_symbol(
     state: tauri::State<'_, Arc<AppState>>,
     query: &str,
 ) -> Result<Vec<GeneDiseaseAssociation>, String> {
-    let singleton = state.phenoblendtk.lock()
+    let singleton = state.phenoblend.lock()
         .map_err(|_| "Failed to lock state".to_string())?;
     let limit = 20;
     singleton.autocomplete_gene_symbol(query, limit)
@@ -458,7 +460,7 @@ async fn download_excel_summary(
     data_type: String,
     annotations: HashMap<String, Vec<GeneDiseaseAssociation>>) -> Result<(), String>
 {
-    let mut singleton = state.phenoblendtk.lock()
+    let mut singleton = state.phenoblend.lock()
         .map_err(|_| "Failed to lock state".to_string())?;
     let fname = format!("{}-annotations.xlsx", data_type);
     let file_path = app
@@ -491,7 +493,7 @@ fn analyze_duo_enrichment(
     n_sim: Option<usize>,
 ) -> Result<Vec<DuoEnrichmentSummary>, String> {
     let state_handle = state.inner().clone();
-    let singleton = state_handle.phenoblendtk.lock().map_err(|e| e.to_string())?;
+    let singleton = state_handle.phenoblend.lock().map_err(|e| e.to_string())?;
     singleton.get_duo_enrichment_payload(annotations, n_sim.unwrap_or(DEFAULT_N_SIM))
 }
 
@@ -500,7 +502,7 @@ fn initialize_notebook(
     app: tauri::AppHandle,
     state: tauri::State<'_, Arc<AppState>>,
     gda_list: HashMap<String, Vec<GeneDiseaseAssociation>>) -> Result<(), String> {
-    let mut singleton = state.phenoblendtk.lock().map_err(|e| e.to_string())?;
+    let mut singleton = state.phenoblend.lock().map_err(|e| e.to_string())?;
     let notebook = singleton.initialize_notebook(gda_list)?;
     if let Err(e) = emit_notebook(&app, &notebook) {
         log::error!("Failed to emit notebook: {e}");

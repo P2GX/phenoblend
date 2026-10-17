@@ -10,9 +10,9 @@ import { HpoDialogWrapperComponent } from '../util/hpotwostep/hpo-dialog-wrapper
 import {  HpoTwostepData } from 'ng-hpo-uikit';
 
 /*
- * This component allows the user to entter HPO data by either choosing a phenopacket or by
+ * This component allows the user to enter HPO data by either choosing a phenopacket or by
  * entering a clinical text and using named-entity recognition (NER)/text-mining to
- * get a list of HPO terms. We expect these term to be the clinicial manifestations of
+ * get a list of HPO terms. We expect these term to be the clinical manifestations of
  * an individual with multiple genetic diagnoses.
 */
 @Component({
@@ -34,6 +34,8 @@ export class NewCaseComponent {
   private notificationService = inject(NotificationService);
   private annotationService = inject(AnnotationService);
   protected hierarchyCache = signal<Record<string, HierarchyMapItem>>({});
+
+  readonly observedHpoCount: number = this.annotationService.observedHpoCount();
 
   /**
    * The explicit callback handler passed down to the library loader.

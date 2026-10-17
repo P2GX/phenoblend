@@ -11,18 +11,35 @@
   align-items: center;
   text-align: center;
   padding: 2rem 1.5rem;
-  border: 1px solid var(--border-color, #e0e0e0);
-  border-radius: 8px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 0.8rem;
   background: var(--card-bg, #fff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  }
 
   .card-icon {
-    font-size: 2rem;
+    font-size: 2.25rem;
     margin-bottom: 0.75rem;
+    background: #f8fafc;
+    width: 4rem;
+    height: 4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid #f1f5f9;
   }
 
   h2 {
     margin: 0 0 0.5rem;
     font-size: 1.1rem;
+    font-weight: 600;
+    color: #0f172a;
   }
 
   p {
@@ -30,5 +47,91 @@
     margin: 0 0 1.5rem;
     color: var(--text-secondary, #666);
     font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  hpo-phenopacket-loader, 
+  .btn-primary {
+    width: 100%;
+    max-width: 280px; // Keeps buttons from stretching too wide on large screens
+  }
+}
+
+.btn-primary {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #2563eb;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background-color: #1d4ed8;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+
+.workspace-header {
+  margin-bottom: 2rem;
+
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 0.5rem;
+    letter-spacing: -0.02em;
+  }
+}
+
+// Standard description text
+.workspace-header__description {
+  color: #64748b;
+  font-size: 1rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+// Warning/Notice Callout Box (Only shows when observedHpoCount > 0)
+.workspace-header__alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75kt;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.875rem 1rem;
+  background-color: #fffbeb; // Soft warm yellow/amber tint for warnings
+  border: 1px solid #fef3c7;
+  border-left: 4px solid #f59e0b; // Amber accent bar on the left
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+
+  .alert-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #d97706;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+}
+
+.workspace-header__warning-text {
+  font-size: 0.875rem;
+  color: #92400e; // Deep amber text for readability
+  margin: 0;
+  line-height: 1.4;
+
+  strong {
+    font-weight: 600;
   }
 }

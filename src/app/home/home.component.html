@@ -1,13 +1,13 @@
 <div class="home-page">
     
     <div class="home-header">
-        <img src="assets/icon.png" alt="PhenoblendTK Logo" class="home-header__logo" />
+        <img src="assets/icon.png" alt="Phenoblend Logo" class="home-header__logo" />
         
         <div class="home-header__titles">
             <h1 class="home-header__h1">
-                <span class="home-header__h1--accent">Phenoblend Toolkit</span>
+                <span class="home-header__h1--accent">Phenoblend</span>
             </h1>
-            <p class="home-header__subtitle">Visualize phenotype blending with multiple genetic diagnosis</p>
+            <p class="home-header__subtitle">Visualize phenotype blending in individuals with multiple genetic diagnoses.</p>
         </div>
     </div>
 
@@ -21,7 +21,7 @@
                 [isLoaded]="statusService.hpoLoaded()"
                 [statusMessage]="hpoMessage()"
                 [termCount]="statusService.nHpoTerms()"
-                helpUrl="https://p2gx.github.io/phenoboard/help/start.html#load-the-hpo"
+                helpUrl="https://p2gx.github.io/phenoblend/tutorial/data.html"
                 [helpLines]="['Select the local hp.json file from your machine.']"
                 (onLoad)="loadHpo()">
                 </ui-load-ontology>
@@ -35,7 +35,7 @@
                 [isLoaded]="statusService.hpoaLoaded()"
                 [statusMessage]="hpoaMessage()"
                 [termCount]="statusService.nHpoaDisease()"
-                helpUrl="https://p2gx.github.io/phenoboard/help/start.html#load-the-hpo"
+                helpUrl="https://p2gx.github.io/phenoblend/tutorial/data.html"
                 [helpLines]="['Select the local phenotype.hpoa file from your machine.']"
                 (onLoad)="loadHpoas()">
             </ui-load-ontology>
@@ -49,10 +49,19 @@
                 [isLoaded]="statusService.g2dLoaded()"
                 [statusMessage]="g2dMessage()"
                 [termCount]="statusService.nGenes()"
-                helpUrl="https://p2gx.github.io/phenoboard/help/start.html#load-the-hpo"
+                helpUrl="https://p2gx.github.io/phenoblend/tutorial/data.html"
                 [helpLines]="['Select the local gene-to-disease.txt file from your machine.']"
                 (onLoad)="loadGeneToDisease()">
             </ui-load-ontology>
         </div> 
+    </div>
+
+    <div class="home-card__footer-action">
+        <button class="primary-action-btn" (click)=proceedToDataEntryWindow() >
+        <span>Enter HPO data</span>
+        <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
+        </button>
     </div>
 </div>
