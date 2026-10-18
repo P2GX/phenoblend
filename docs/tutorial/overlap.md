@@ -1,4 +1,4 @@
-# Overlap plots
+# Overlap plot
 
 The Overlap plot shows a row for each gene identified as harboring a causal genotype. If a gene is associated with more than one disease, the user can choose which disease was diagnosed or can indicate a combination or all diseases if the specific disease diagnosis is unclear. 
 
