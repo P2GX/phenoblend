@@ -14,3 +14,11 @@ Phenoblend is a desktop application that can be run on Mac, Windows, or several 
 - [Understanding the overlap plot](overlap.md)
 - [Understanding the upset plot](upset.md)
 - [Understanding the phenotype profile plot](profile.md)
+
+# Example
+
+Users can download the following phenopacket in order to try the software
+
+* <a href="../public/PMID_15948193_proposita.json" download="my-custom-filename.json">Download Phenopacket</a>
+
+The phenopacket was created based on data from [Bertola DR, et al. (2005) Neurofibromatosis-Noonan syndrome: molecular evidence of the concurrence of both disorders in a patient. *Am J Med Genet A* **136**:242-5](https://pubmed.ncbi.nlm.nih.gov/15948193/)
