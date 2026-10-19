@@ -5,7 +5,10 @@ export interface SimpleOntologyTerm {
 }
 
 export interface GeneDiseaseEntity {
-  // TODO: mirror Rust struct; 
+    ncbiGeneId: string;
+    geneSymbol: string,
+    diseaseList: SimpleOntologyTerm[];
+    diseaseHpoIds: Set<string> 
 }
 
 export interface SimpleOntologyTerm {

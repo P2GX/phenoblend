@@ -7,11 +7,52 @@
       <small>Last updated {{ updatedAt() | date: 'medium' }}</small>
     </header>
 
-    <h3>Gene–disease entries ({{ nb.geneDiseaseList.length }})</h3>
-    
+        <h3>Input </h3>
+    <p>{{ nb.dataInputHistory }}</p>
 
-    <h3>Input history</h3>
-    <pre>{{ nb.dataInputHistory }}</pre>
+@let genes = geneToDiseaseEntityList();
+@if (genes.length > 0) {
+  <h3>Gene–disease entries ({{ genes.length }})</h3>
+<div class="table-container" style="overflow-x: auto;">
+  <table class="gene-disease-table">
+    <thead>
+      <tr>
+        <th>Gene Symbol</th>
+        <th>Associated Diseases</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (gdEntry of genes; track gdEntry.geneSymbol) {
+        <tr>
+          <td class="gene-symbol-cell">
+            <strong>{{ gdEntry.geneSymbol }}</strong>
+          </td>
+          <td>
+            @if (gdEntry.diseaseList.length > 0) {
+              <ul class="term-list">
+                @for (disease of gdEntry.diseaseList; track disease.termId) {
+                  <li class="term-item">
+                    <span [title]="disease.termLabel">
+                      <code>{{ disease.termId }}</code> {{ disease.termLabel }}
+                    </span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <span class="empty-text">None</span>
+            }
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="2">No gene–disease entries.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+ }
+
   </section>
     @if (nb.observedHpo.length; as n) {
         <p>Observed HPO terms: n={{n}}</p>
