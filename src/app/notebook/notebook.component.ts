@@ -1,13 +1,13 @@
 // notebook.component.ts
 import { Component, computed, inject, Signal} from '@angular/core';
-import { DatePipe, KeyValuePipe, PercentPipe } from '@angular/common';
+import { DatePipe, PercentPipe } from '@angular/common';
 import { AppStatusService } from '../services/app-status-service';
 import { GeneDiseaseEntity, GeneMatch, OverlapData, PhenoBlendAnalysis, SimpleOntologyTerm, TermMatches, UpsetData } from '../models/notebook';
 
 @Component({
   selector: 'app-notebook',
   standalone: true,
-  imports: [DatePipe, KeyValuePipe, PercentPipe],
+  imports: [DatePipe, PercentPipe],
   templateUrl: './notebook.component.html',
   styleUrls: ['./notebook.component.scss'],
 })
@@ -27,21 +27,9 @@ export class NotebookComponent {
   })
   readonly spread = computed(() => this.analysis()?.spread ?? null);
 
-/*
-#[derive(Clone, Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GeneDiseaseEntity {
-    pub ncbi_gene_id: String,
-    pub gene_symbol: String,
-    pub disease_list: Vec<SimpleOntologyTerm>,
-    #[serde(serialize_with = "serialize_term_id_set")]
-    pub(crate) disease_hpo_ids: HashSet<TermId> 
-}
-    */
-
-readonly geneToDiseaseEntityList: Signal<GeneDiseaseEntity[]> = computed<GeneDiseaseEntity[]>(
-    () => this.notebook()?.geneDiseaseList ?? []
-);
+  readonly geneToDiseaseEntityList: Signal<GeneDiseaseEntity[]> = computed<GeneDiseaseEntity[]>(
+      () => this.notebook()?.geneDiseaseList ?? []
+  );
 
 
   readonly geneToHpoListMap = computed<Record<string, SimpleOntologyTerm[]>>(

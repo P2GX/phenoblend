@@ -19,21 +19,23 @@ export interface SimpleOntologyTerm {
 export type MatchType = 'exact' | 'descendant' | 'partial' | 'noMatch';
 
 export interface GeneMatch {
-    matchType: MatchType,
+    matchType: MatchType;
     score: number;
     matchedTerm: SimpleOntologyTerm;
 }
 
 
 export interface TermMatches {
-    term: SimpleOntologyTerm,
+    term: SimpleOntologyTerm;
     matches: Record<string, GeneMatch>;
 }
 
 
 export interface OverlapData {
     entities: string[];
-     columns: TermMatches[];
+    rows: TermMatches[];
+    nMatchedTerms: number[];
+    nPartiallyMatchedTerms: number[];
 }
 
 export interface MatchedTerm {

@@ -24,6 +24,18 @@ pub enum MatchType {
     NoMatch,
 }
 
+impl MatchType {
+    /// True if the disease annotation accounts for the proband term
+    /// (`Exact` or `Descendant`). `Partial` and `NoMatch` do not count.
+    pub fn is_match(self) -> bool {
+        matches!(self, MatchType::Exact | MatchType::Descendant)
+    }
+
+     pub fn is_partial_match(self) -> bool {
+        matches!(self, MatchType::Partial)
+    }
+}
+
 
 /// The outcome of matching one proband term against one gene-disease entity.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -64,6 +76,14 @@ impl GeneMatch {
             return Ok(Self { match_type: MatchType::NoMatch, score: 0.0, matched_term: term });
         }
         Ok(Self { match_type: MatchType::Partial, score, matched_term: term })
+    }
+
+    pub fn is_match(&self) -> bool {
+        self.match_type.is_match()
+    }
+
+    pub fn is_partial_match(&self) -> bool {
+        self.match_type.is_partial_match()
     }
 }
 
@@ -150,16 +170,26 @@ impl OverlapPlotPayload {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct OverlapData {
      /// Ordered array of gene symbols or diseases following column sorting block rules
     pub entities: Vec<String>,
     /// Ordered rows following phenotype grouping tiers
-    pub columns: Vec<TermMatches>,
+    pub rows: Vec<TermMatches>,
+     /// `n_matched_terms[i]` is the number of rows (proband terms) that have a
+    /// match for `entities[i]`. Same length and order as `entities`.
+    pub n_matched_terms: Vec<usize>,
+     /// `n_matched_terms[i]` is the number of rows (proband terms) that have a
+    /// partial match for `entities[i]`.
+    pub n_partially_matched_terms: Vec<usize>
 }
+
+
+
 
 impl OverlapData {
     pub fn to_payload(&self) -> OverlapPlotPayload {
-        let overlap_list: Vec<OverlapPlotItem> = self.columns.iter()
+        let overlap_list: Vec<OverlapPlotItem> = self.rows.iter()
             .map(|entry| entry.to_overlap_item())
             .collect();
         OverlapPlotPayload {
@@ -179,9 +209,25 @@ impl OverlapData {
         let mut entities: Vec<String> = gene_symbols.into_iter().collect();
         entities.sort();
         entities.dedup();
+        let mut n_matched_terms = vec![0usize; entities.len()];
+        let mut n_partially_matched_terms = vec![0usize; entities.len()];
+        for tm in term_matches {
+            for (count, gene) in n_matched_terms.iter_mut().zip(&entities) {
+                if tm.matches.get(gene).is_some_and(GeneMatch::is_match) {
+                    *count += 1;
+                } 
+            }
+            for (count, gene) in n_partially_matched_terms.iter_mut().zip(&entities) {
+                if tm.matches.get(gene).is_some_and(GeneMatch::is_partial_match) {
+                    *count += 1;
+                }
+            }
+        }
         Self {
             entities,
-            columns: term_matches.to_vec(),
+            rows: term_matches.to_vec(),
+            n_matched_terms,
+            n_partially_matched_terms
         }
     }
 }

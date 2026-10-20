@@ -1,6 +1,6 @@
 
 @if (notebook(); as nb) {
-   <!-- <pre>{{ nb | json }}</pre> -->
+    @if (nb.observedHpo.length; as nHpoTerms) {
   <section class="notebook">
     <header>
       <h2>Notebook {{ nb.id }}</h2>
@@ -54,15 +54,11 @@
  }
 
   </section>
-    @if (nb.observedHpo.length; as n) {
-        <p>Observed HPO terms: n={{n}}</p>
-    } @else { 
-        <p>No observed HPO terms</p>
-    }
     <section class="overlap-section">
   <header>
     <h2>Overlap Matrix</h2>
     <small>HPO Terms vs. Gene Entities</small>
+     <p>Observed HPO terms: n={{nHpoTerms}}</p>
   </header>
 
   @if (nb.analysis?.overlap; as overlapData) {
@@ -77,7 +73,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (col of overlapData.columns; track col.term.termId) {
+          @for (col of overlapData.rows; track col.term.termId) {
             <tr>
               <!-- Row Header: Shows HPO Label and ID -->
               <td class="sticky-col term-header">
@@ -103,6 +99,31 @@
             </tr>
           }
         </tbody>
+        @let counts = overlapData.nMatchedTerms;
+        @let partial = overlapData.nPartiallyMatchedTerms;
+        @if (counts.length > 0)  {
+          <tfoot>
+            @let nRows = overlapData.rows.length;
+            <tr>
+              <th class="sticky-col">Terms matched</th>
+              @for (observedCount of overlapData.nMatchedTerms; track $index) {
+                <td class="cell-total"
+                    title="Number of phenopacket terms that match a term annotated to this gene's disease">
+                  {{ observedCount }}/{{ nRows }}
+                </td>
+              }
+            </tr>
+            <tr class="total-row partial-row">
+              <th class="sticky-col">Partially matched</th>
+              @for (n of partial; track $index) {
+                <td class="cell-total"
+                    title="Phenopacket terms with only a partial (shared-ancestor) match">
+                  {{ n }}/{{ nRows }}
+                </td>
+              }
+            </tr>
+          </tfoot>
+        }
       </table>
     </div>
   } @else {
@@ -252,7 +273,9 @@
   }
 }
 </section>
-
+ } @else { 
+        <p>No observed HPO terms</p>
+    }
 } @else {
   <p>No notebook loaded.</p>
 }
