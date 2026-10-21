@@ -1,6 +1,7 @@
 
 @if (notebook(); as nb) {
     @if (nb.observedHpo.length; as nHpoTerms) {
+      <pre>{{nb | json}} </pre>
   <section class="notebook">
     <header>
       <h2>Notebook {{ nb.id }}</h2>
@@ -80,6 +81,9 @@
                 <div class="term-info">
                   <span class="term-label">{{ col.term.termLabel }}</span>
                   <code>{{ col.term.termId }}</code>
+                  @if (col.severity; as s) {
+                    <code>{{s}}</code>
+                  }
                 </div>
               </td>
               

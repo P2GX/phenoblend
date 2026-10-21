@@ -49,10 +49,8 @@ export class HomeComponent implements OnInit {
     const status = this.statusService;
     if (status.hpoLoaded()) {
       const version = status.hpoVersion();
-      console.log("Version=", version);
       const count = status.nHpoTerms();
-       console.log("Count=", count);
-       const message = `Loaded (${count} terms; version: ${version})`;
+      const message = `Loaded (${count} terms; version: ${version})`;
       return message;
     } else if (status.hpoLoading()) {
       return "Loading hp.json ...";

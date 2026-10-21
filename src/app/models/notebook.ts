@@ -1,3 +1,5 @@
+import { Severity } from "ngx-phenoprofile";
+
 // notebook.model.ts
 export interface SimpleOntologyTerm {
   termId: string;
@@ -27,6 +29,7 @@ export interface GeneMatch {
 
 export interface TermMatches {
     term: SimpleOntologyTerm;
+    severity?: Severity;
     matches: Record<string, GeneMatch>;
 }
 

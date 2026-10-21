@@ -3,7 +3,7 @@ import { CommonModule, DecimalPipe } from '@angular/common';
 import { OverlapPlotComponent } from './overlap-plot.component';
 
 const meta: Meta<OverlapPlotComponent> = {
-  title: 'PhenoViz/PresenceMatrix',
+  title: 'Phenoblend/OverlapPlotPayload',
   component: OverlapPlotComponent,
   decorators: [
     moduleMetadata({

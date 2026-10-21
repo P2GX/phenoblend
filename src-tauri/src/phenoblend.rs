@@ -1,5 +1,5 @@
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::{collections::HashMap, sync::Arc};
 
 use fenominal::{AutoCompleter, Fenominal, FenominalSentence, OntologyMatch};
@@ -14,13 +14,12 @@ use rand::rngs::StdRng;
 
 
 use crate::blend::disease_gene_entity::GeneDiseaseEntity;
-use crate::blend::dto::{OverlapData, PhenoBlendAnalysis, SpreadPlotPayload, UpsetPlotPayload};
+use crate::blend::dto::{ObservedHpoInput, OverlapData, PhenoBlendAnalysis, Severity, SpreadPlotPayload, UpsetPlotPayload, severity_from_ids};
 use crate::blend::spread_plot::{build_spread_payload, check_plots_agree};
 use crate::enrichment::dto::DuoEnrichmentSummary;
 use crate::enrichment::gdannotation_source::{GeneDiseaseAnnotationSource, OntoliusDescendants};
 use crate::enrichment::melded_ppkt::MeldedPpkt;
 use crate::enrichment::test::{EnrichmentTest, Method};
-use crate::excel::payload_to_excel::export_upset_plot_to_xlsx;
 use crate::model::Notebook;
 use crate::model::status::InitializationStatusDto;
 use crate::{blend::dto::OverlapPlotPayload, hpoa::disease_model::SimpleDiseaseModel, model::{proband::Proband, simple_term::SimpleOntologyTerm}};
@@ -35,6 +34,7 @@ pub struct PhenoblendSingleton {
     pub(crate) gene_to_disease_d: Option<HashMap<String, Vec<GeneDiseaseAssociation>>>,
     /// Counts of explicit annotations of each HPO term to diseases (ranges from 0 to ca. 9000 and used to calculate similarity)
     pub(crate) hpo_term_to_disease_count_d: HashMap<TermId, usize>,
+    /// Autocompletion functionality from Fenominal
     pub(crate) autocompleter: Option<AutoCompleter>,
     /// Object that records input data and analysis parameters and results for Q/C or downstream use.
     pub(crate) notebook: Option<Notebook>
@@ -83,14 +83,23 @@ impl PhenoblendSingleton {
         let mut observed_hpo: Vec<TermId> = Vec::new();
         let mut disease_list: Vec<SimpleOntologyTerm> = Vec::new();
         let mut gene_symbol_list: Vec<String> = Vec::new();
+        let mut severities: BTreeMap<String, Severity> = BTreeMap::new();
         for pf in ppkt.phenotypic_features.iter() {
+            eprintln!("pf={:?}", pf);
             if pf.excluded {
                 continue;
             }
+
             let hpo_id = match &pf.r#type {
                 Some(oclass) => oclass.id.clone(),
                 None => { return Err(format!("Could not extract id from Ontology Class: {:?}", &pf.r#type));},
             };
+            if let Some(oclass) = &pf.severity {
+                match Severity::from_hpo_id(&oclass.id) {
+                    Some(sev) => { severities.insert(hpo_id.clone(), sev); }
+                    None => log::warn!("Unrecognized severity term {} for feature {}", oclass.id, hpo_id),
+                }
+            }
             let hpo_tid: TermId = hpo_id.parse::<TermId>().map_err(|_| format!("Failed to parse TermId from string '{}'", hpo_id))?;
             observed_hpo.push(hpo_tid);
         }
@@ -109,7 +118,8 @@ impl PhenoblendSingleton {
             id: proband_id, 
             gene_list: gene_symbol_list, 
             disease_list: disease_list, 
-            observed_hpos: observed_hpo.clone()
+            observed_hpos: observed_hpo.clone(),
+            severities
         };
         self.individual = proband;
         let hpo = self.hpo
@@ -140,18 +150,25 @@ impl PhenoblendSingleton {
 
     pub fn add_observed_hpos_from_ner(
         &mut self,
-        observed: Vec<String>
+        observed: Vec<ObservedHpoInput>
     ) -> Result<(), String>{
         let mut observed_tid: Vec<TermId> = Vec::new();
-        for obs in observed {
-            let tid: TermId = obs.parse().map_err(|e| format!("Could not parse {obs}"))?;
+         let mut severities: BTreeMap<String, Severity> = BTreeMap::new();
+        for obs in &observed {
+            let term_id_str = &obs.term_id;
+            let tid: TermId = term_id_str.parse().map_err(|e| format!("Could not parse {term_id_str}"))?;
             observed_tid.push(tid);
+            if let Some(sev) = severity_from_ids(&obs.modifier_ids){
+                severities.insert(term_id_str.clone(), sev);
+            }
+           
         }
         let proband = Proband { 
             id: String::default(), 
             gene_list: vec![], 
             disease_list: vec![], 
-            observed_hpos: observed_tid.clone()
+            observed_hpos: observed_tid.clone(),
+            severities: severities.clone(),
          };
         self.individual = proband;
         let hpo = self.hpo
@@ -521,4 +538,31 @@ fn seed_for_pair(proband_id: &str, gene_a: &str, gene_b: &str) -> u64 {
     gene_a.hash(&mut hasher);
     gene_b.hash(&mut hasher);
     hasher.finish()
+}
+
+
+
+
+
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+use super::*;
+    use crate::tests::hpo_fixture::a13;
+
+    #[rstest]
+    fn a13_severity_reaches_proband(a13: Phenopacket) {
+        let mut pblend = PhenoblendSingleton::new();
+        let result = pblend.ingest_ppkt(a13);
+        assert!(result.is_ok());
+        let p = pblend.individual.clone();
+       
+        assert_eq!(p.observed_hpos.len(), 5);
+        assert_eq!(p.severities.len(), 1);
+        assert_eq!(p.severities.get("HP:0001639"), Some(&Severity::Severe));
+        assert_eq!(p.gene_list, ["MYH7", "PRKAG2"]);
+    }
+
 }

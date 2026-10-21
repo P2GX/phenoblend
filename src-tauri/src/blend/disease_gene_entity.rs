@@ -155,7 +155,8 @@ pub fn compute_term_matches(
     let mut seen = HashSet::new();
     let mut all = Vec::new();
     for tid in proband.observed_hpos.iter().filter(|t| seen.insert((*t).clone())) {
-        let mut tm = TermMatches::new(crate::hpo::hpo_util::ontolius_to_simple(hpo, tid)?);
+        let mut tm = TermMatches::new(crate::hpo::hpo_util::ontolius_to_simple(hpo, tid)?)
+            .with_severity(proband.severities.get(&tid.to_string()).copied());
         for gde in gde_list {
             let m = match classify_perfect_match(tid, gde, hpo) {
                 Some(m) => m,
@@ -166,6 +167,10 @@ pub fn compute_term_matches(
                 }
             };
             tm.insert(&gde.gene_symbol, m);
+            let tid_str = tid.to_string();
+            if let Some(severity) = proband.severities.get(&tid_str) {
+                tm.severity = Some(*severity);
+            };
         }
         all.push(tm);
     }

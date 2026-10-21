@@ -3,8 +3,8 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { FenominalSentence, HierarchyMapItem, OntologyMatch, HpoTermMinimal } from 'ng-hpo-uikit';
 import { InitializationStatusDto } from '../models/status_dto'; 
-import { DuoEnrichmentSummary, GeneDiseaseAnnotations, GeneDiseaseAssociation } from '../models/interfaces';
-import { PresenceMatrixPayload, SpreadPlotPayload, UpsetPlotPayload } from 'ngx-phenoprofile';
+import { DuoEnrichmentSummary, GeneDiseaseAnnotations, GeneDiseaseAssociation, ObservedHpoInput } from '../models/interfaces';
+import { OverlapPlotPayload, SpreadPlotPayload, UpsetPlotPayload } from 'ngx-phenoprofile';
 
 @Injectable({
   providedIn: 'root'
@@ -28,7 +28,7 @@ export class ConfigService {
     return await invoke("ingest_phenopacket", {'ppktString': ppkt});
   }
 
-  async getOverlapPlotData(): Promise<PresenceMatrixPayload> {
+  async getOverlapPlotData(): Promise<OverlapPlotPayload> {
     return await invoke("get_overlap_plot");
   }
 
@@ -89,7 +89,7 @@ export class ConfigService {
     return invoke('export_svg_to_pdf', { svgContent, defaultFilename });
   }
 
-  async addObservedHposFromNER(observed: string[]): Promise<null> {
+  async addObservedHposFromNER(observed: ObservedHpoInput[]): Promise<null> {
     return invoke<null>('add_observed_hpos_from_ner', {observed});
   }
 

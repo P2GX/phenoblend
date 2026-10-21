@@ -16,7 +16,7 @@ import {
   SpreadPlotComponent,
   OverlapPlotComponent,
   SpreadPlotPayload,
-  PresenceMatrixPayload,
+  OverlapPlotPayload,
   UpsetPlotPayload,
 } from 'ngx-phenoprofile';
 
@@ -40,7 +40,7 @@ export class PhenotypeProfileVisualizerComponent implements OnInit {
   protected annotationService = inject(AnnotationService);
   private notificationService = inject(NotificationService);
 
-  readonly matrixData = signal<PresenceMatrixPayload | null>(null);
+  readonly matrixData = signal<OverlapPlotPayload | null>(null);
   readonly upsetData = signal<UpsetPlotPayload | null>(null);
   readonly spreadData = signal<SpreadPlotPayload | null>(null);
   readonly isLoading = signal<boolean>(false);

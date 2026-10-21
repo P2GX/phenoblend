@@ -88,19 +88,69 @@ impl GeneMatch {
 }
 
 
+
+/// Severity of an observed feature (children of HP:0012824, "Severity").
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "camelCase")]
+pub enum Severity { Borderline, Mild, Moderate, Severe, Profound }
+
+impl Severity {
+    pub fn from_hpo_id(id: &str) -> Option<Self> {
+        match id {
+            "HP:0012827" => Some(Self::Borderline),
+            "HP:0012825" => Some(Self::Mild),
+            "HP:0012826" => Some(Self::Moderate),
+            "HP:0012828" => Some(Self::Severe),
+            "HP:0012829" => Some(Self::Profound),
+            _ => None,
+        }
+    }
+}
+
+
 /// All match results for one observed proband term, across all gene entities.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TermMatches {
     pub term: SimpleOntologyTerm,
+    /// Optionally indicate the degree of severity reported for the finding.
+    pub severity: Option<Severity>,
     /// Gene symbol -> match
     pub matches: BTreeMap<String, GeneMatch>,
 }
 
 impl TermMatches {
     pub fn new(term: SimpleOntologyTerm) -> Self {
-        Self { term, matches: BTreeMap::new() }
+        Self { term, severity: None, matches: BTreeMap::new() }
     }
+
+    /// Sets the severity recorded for this observed term (`None` leaves it unset).
+    #[must_use]
+    pub fn with_severity(mut self, severity: Option<Severity>) -> Self {
+        self.severity = severity;
+        self
+    }
+
+    pub fn severe(term: SimpleOntologyTerm) -> Self {
+        Self { term, severity: Some(Severity::Severe), matches: BTreeMap::new() }
+    }
+
+     pub fn profound(term: SimpleOntologyTerm) -> Self {
+        Self { term, severity: Some(Severity::Profound), matches: BTreeMap::new() }
+    }
+    
+    pub fn moderate(term: SimpleOntologyTerm) -> Self {
+        Self { term, severity: Some(Severity::Moderate), matches: BTreeMap::new() }
+    }
+
+    pub fn mild(term: SimpleOntologyTerm) -> Self {
+        Self { term, severity: Some(Severity::Mild), matches: BTreeMap::new() }
+    }
+
+       pub fn borderline(term: SimpleOntologyTerm) -> Self {
+        Self { term, severity: Some(Severity::Borderline), matches: BTreeMap::new() }
+    }
+
 
     pub fn insert(&mut self, gene_symbol: &str, m: GeneMatch) {
         self.matches.insert(gene_symbol.to_string(), m);
@@ -112,6 +162,7 @@ impl TermMatches {
         OverlapPlotItem {
             hpo_id: self.term.term_id_as_string(),
             hpo_name: self.term.term_label.clone(),
+            severity: self.severity,
             scores: self.matches.iter().map(|(g, m)| (g.clone(), m.score)).collect(),
         }
     }
@@ -123,6 +174,8 @@ impl TermMatches {
 pub struct OverlapPlotItem {
     pub hpo_id: String,
     pub hpo_name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub severity: Option<Severity>,
     /// A map matching gene symbols to their calculated matrix match scores [0.0 - 1.0]
     pub scores: HashMap<String, f64>,
 }
@@ -138,6 +191,7 @@ impl OverlapPlotItem {
         Self {
             hpo_id: hpo_id.to_string(),
             hpo_name: label,
+            severity: None,
             scores: HashMap::default()
         }
     }
@@ -230,4 +284,20 @@ impl OverlapData {
             n_partially_matched_terms
         }
     }
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_severity_sets_and_clears() {
+        let term = SimpleOntologyTerm::new("HP:0001639", "Hypertrophic cardiomyopathy").unwrap();
+        let tm = TermMatches::new(term).with_severity(Some(Severity::Severe));
+        assert_eq!(tm.severity, Some(Severity::Severe));
+        assert_eq!(tm.with_severity(None).severity, None);
+    }
+
 }

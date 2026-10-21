@@ -2,7 +2,9 @@
 import { Component, ElementRef, Input, OnChanges, SimpleChanges, ViewChild, signal } from '@angular/core';
 import { DecimalPipe} from '@angular/common'
 import * as d3 from 'd3';
-import { PresenceMatrixPayload } from '../models/phenoprofile_dto';
+import { OverlapPlotPayload, Severity } from '../models/phenoprofile_dto';
+
+
 
 
 
@@ -18,6 +20,9 @@ import { PresenceMatrixPayload } from '../models/phenoprofile_dto';
           <strong>{{ data.gene }}</strong> ↔ <strong>{{ data.hpoId }}</strong><br>
           <span class="label">{{ data.hpoName }}</span><br>
           <span class="score">Match Value: {{ data.score | number:'1.2-2' }}</span>
+          @if (data.severity) {
+            <br><span class="sev">Severity: {{ data.severity }}</span>
+          }
         </div>
       }
     </div>
@@ -38,20 +43,41 @@ import { PresenceMatrixPayload } from '../models/phenoprofile_dto';
     }
     .matrix-tooltip .label { color: #adb5bd; font-style: italic; }
     .matrix-tooltip .score { color: #66C2A5; font-weight: bold; }
+    .matrix-tooltip .sev { color: #c4b5fd; font-weight: bold; }
   `],
   imports: [DecimalPipe]
 })
 export class OverlapPlotComponent implements OnChanges {
   @ViewChild('chartContainer', { static: true }) chartContainerRef!: ElementRef<HTMLElement>;
 
-  @Input({ required: true }) data!: PresenceMatrixPayload;
+  @Input({ required: true }) data!: OverlapPlotPayload;
 
-  readonly tooltipData = signal<{ x: number; y: number; gene: string; hpoId: string; hpoName: string; score: number } | null>(null);
+ // readonly tooltipData = signal<{ x: number; y: number; gene: string; hpoId: string; hpoName: string; score: number } | null>(null);
+  readonly tooltipData = signal<{
+      x: number; 
+      y: number; 
+      gene: string; 
+      hpoId: string; 
+      hpoName: string; 
+      score: number; 
+      severity: Severity | null;
+  } | null>(null);
 
   // Match your exact Matplotlib configuration profile colors
   private readonly MATCH_COLOR = '#66C2A5';
   private readonly SIM_COLOR = '#ffd92f';
   private readonly MISMATCH_COLOR = '#ffffff';
+  
+
+private readonly SEVERITY_STYLE: Record<Severity, { fill: string; text: string; abbr: string }> = {
+  borderline: { fill: '#ede9fe', text: '#4c1d95', abbr: 'Bord.' },
+  mild:       { fill: '#c4b5fd', text: '#4c1d95', abbr: 'Mild' },
+  moderate:   { fill: '#8b5cf6', text: '#ffffff', abbr: 'Mod.' },
+  severe:     { fill: '#5b21b6', text: '#ffffff', abbr: 'Sev.' },
+  profound:   { fill: '#2e1065', text: '#ffffff', abbr: 'Prof.' },
+};
+private readonly HEAVY = new Set<Severity>(['severe', 'profound']);
+
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['data'] && this.data) {
@@ -69,8 +95,7 @@ export class OverlapPlotComponent implements OnChanges {
 
     // Configurable scaling step bounds (similar to your 0.5 inches space calculations)
     const cellSize = 30;
-    //const margin = { top: 120, right: 100, bottom: 40, left: 180 };
-    const margin = { top: 120, right: 180, bottom: 40, left: 180 };
+    const margin = { top: 120, right: 180, bottom: 70, left: 180 };
     const matrixWidth = cols.length * cellSize; // Width of just the matrix grid
     const width = matrixWidth + margin.left + margin.right;
     const height = (genes.length * cellSize) + margin.top + margin.bottom;
@@ -149,6 +174,10 @@ export class OverlapPlotComponent implements OnChanges {
         const cellGroup = mainGroup.append('g')
           .attr('class', 'cell-node');
 
+        const heavy = !!row.severity && score >= 1.0 && this.HEAVY.has(row.severity);
+        const baseStroke = heavy ? 2.5 : 1;
+        const strokeColor = heavy ? this.SEVERITY_STYLE[row.severity!].fill : '#333333';
+
         // Render an invisible tracking rectangle wrapper to make hovering easy for small dots
         cellGroup.append('rect')
           .attr('x', xScale(row.hpoId)!)
@@ -157,29 +186,27 @@ export class OverlapPlotComponent implements OnChanges {
           .attr('height', yScale.bandwidth())
           .style('fill', 'transparent')
           .style('cursor', 'pointer')
-          .on('mouseover', (event) => {
+          .on('mouseover', (event: MouseEvent) => {
+            const [x, y] = d3.pointer(event, container);
             // Highlight row/column intersections dynamically by shifting opacity
-            d3.select(event.currentTarget.parentNode).select('circle')
-              .style('stroke-width', '2px')
+            d3.select((event.currentTarget as Element).parentNode as Element).select('circle')
+              .style('stroke-width', `${baseStroke+1}px`)
               .attr('r', (xScale.bandwidth() / 2) - 1);
 
             this.tooltipData.set({
-              x: event.layerX,
-              y: event.layerY,
-              gene: gene,
-              hpoId: row.hpoId,
-              hpoName: row.hpoName,
-              score: score
+              x, y, gene,
+              hpoId: row.hpoId, hpoName: row.hpoName,  score,
+              severity: row.severity ?? null,
             });
           })
-          .on('mousemove', (event: { layerX: any; layerY: any; }) => {
-            this.tooltipData.update(current => current ? { ...current, x: event.layerX, y: event.layerY } : null);
+          .on('mousemove', (event: MouseEvent) => {
+             const [x, y] = d3.pointer(event, container);
+            this.tooltipData.update(current => current ? { ...current, x, y } : null);
           })
           .on('mouseleave', (event: { currentTarget: { parentNode: any; }; }) => {
             d3.select(event.currentTarget.parentNode).select('circle')
-              .style('stroke-width', '1px')
+              .style('stroke-width', `${baseStroke}px`)
               .attr('r', (xScale.bandwidth() / 2) - 3);
-
             this.tooltipData.set(null);
           });
 
@@ -189,11 +216,35 @@ export class OverlapPlotComponent implements OnChanges {
           .attr('cy', cy)
           .attr('r', (xScale.bandwidth() / 2) - 3)
           .style('fill', colorScale(score))
-          .style('stroke', '#333333')
-          .style('stroke-width', '1px')
+          .style('stroke', strokeColor)
+          .style('stroke-width', `${baseStroke}px`)
           .style('pointer-events', 'none'); // Let pointer events fall directly through to the tracking rect
       });
     });
+
+  if (cols.some(c => c.severity)) {
+  const trackH = 16;
+  const track = mainGroup.append('g')
+    .attr('transform', `translate(0, ${genes.length * cellSize + 10})`);
+
+  track.append('text')
+    .attr('x', -12).attr('y', trackH / 2).attr('dy', '0.35em')
+    .style('text-anchor', 'end').style('font-size', '12px').style('font-weight', 'bold')
+    .text('Severity');
+
+  cols.filter(c => c.severity).forEach(c => {
+    const st = this.SEVERITY_STYLE[c.severity!];
+    const g = track.append('g').attr('transform', `translate(${xScale(c.hpoId)!}, 0)`);
+    g.append('rect')
+      .attr('width', xScale.bandwidth()).attr('height', trackH).attr('rx', 3)
+      .style('fill', st.fill).style('stroke', '#333333').style('stroke-width', '1px');
+    g.append('text')
+      .attr('x', xScale.bandwidth() / 2).attr('y', trackH / 2).attr('dy', '0.35em')
+      .style('text-anchor', 'middle').style('font-size', '9px').style('font-weight', '600')
+      .style('fill', st.text).text(st.abbr);
+    g.append('title').text(`${c.hpoName}: ${c.severity}`);
+  });
+}
     // ==========================================
 // 7. Render Compact Colorbar Legend on the Right
 // ==========================================
@@ -259,7 +310,33 @@ legendGroup.selectAll('.legend-label')
   .style('font-family', 'sans-serif')
   .style('fill', '#000000')
   .text(d => d.label);
-  }
+
+  const present = (Object.keys(this.SEVERITY_STYLE) as Severity[])
+  .filter(s => cols.some(c => c.severity === s));
+if (present.length) {
+  const sevLegend = mainGroup.append('g')
+    .attr('transform', `translate(${legendX}, ${totalLegendHeight + 30})`);
+  sevLegend.append('text').attr('y', -8)
+    .style('font-size', '12px').style('font-weight', 'bold').text('Severity');
+  present.forEach((s, i) => {
+    const st = this.SEVERITY_STYLE[s];
+    sevLegend.append('rect').attr('y', i * 18).attr('width', legendWidth).attr('height', 14)
+      .attr('rx', 3).style('fill', st.fill).style('stroke', '#333333');
+    sevLegend.append('text').attr('x', legendWidth + 10).attr('y', i * 18 + 7).attr('dy', '0.35em')
+      .style('font-size', '12px').text(s.charAt(0).toUpperCase() + s.slice(1));
+  });
+  const noteY = present.length * 18 + 14;
+  ['Thick outline =', 'matched severe term'].forEach((line, i) =>
+    sevLegend.append('text').attr('y', noteY + i * 12)
+      .style('font-size', '10px').style('fill', '#555555').text(line));
+  const legendBottom = totalLegendHeight + 30 + noteY + 18;   // second note line plus descenders
+  svg.attr('height', Math.max(height, margin.top + legendBottom));
 }
 
-export { PresenceMatrixPayload };
+
+  }
+
+  
+}
+
+

@@ -1,13 +1,18 @@
-export interface PresenceMatrixRow {
+
+export type Severity = 'borderline' | 'mild' | 'moderate' | 'severe' | 'profound';
+
+
+export interface OverlapPlotItem {
   hpoId: string;
   hpoName: string;
+  severity?: Severity;
   // Keyed by Gene Symbol, value ranges from [0.0 to 1.0]
   scores: { [geneSymbol: string]: number };
 }
 
-export interface PresenceMatrixPayload {
+export interface OverlapPlotPayload {
   entities: string[]; // Already sorted by your column ranking rules
-  columns: PresenceMatrixRow[]; // Already sorted by your tier blocks
+  columns: OverlapPlotItem[]; // Already sorted by your tier blocks
 }
 
 export interface UpsetPlotPayload {

@@ -8,6 +8,7 @@ import { Router } from '@angular/router';
 import { AnnotationService } from '../services/annotation-service';
 import { HpoDialogWrapperComponent } from '../util/hpotwostep/hpo-dialog-wrapper.component';
 import {  HpoTwostepData } from 'ng-hpo-uikit';
+import { ObservedHpoInput } from '../models/interfaces';
 
 /*
  * This component allows the user to enter HPO data by either choosing a phenopacket or by
@@ -47,9 +48,8 @@ export class NewCaseComponent {
     this.statusMessage.set('Parsing phenopacket payload in Rust engine...');
     this.errorDetails.set(null);
     try { 
-      await this.configService.ingestPhenopacket(payload);
+     await this.configService.ingestPhenopacket(payload);
       const hpoCount = await this.configService.getObservedHpoCount();
-        console.log("hpoCount", hpoCount)
       this.notificationService.showSuccess(`Phenopacket input with ${hpoCount} observed HPO teams.`); 
       this.proceedToNextWindow(hpoCount);
     } catch (error) {
@@ -103,8 +103,12 @@ export class NewCaseComponent {
     this.showHpoTwoStepDialog.set(false);
     if (polishedAnnotations) {
       const observedTerms: PolishedHpoAnnotation[] = polishedAnnotations.filter((annot) => ! annot.excluded);
-       const termIds = observedTerms.map(t => t.termId);
-         this.configService.addObservedHposFromNER(termIds);
+      const inputs: ObservedHpoInput[] = observedTerms.map(a => ({
+        termId: a.termId,
+        modifierIds: a.modifiers.map(m => m.termId),   // field name of HpoTermMinimal assumed
+      }));
+      
+         this.configService.addObservedHposFromNER(inputs);
         const n_observed = observedTerms.length;
        if (n_observed > 0) {
         this.proceedToNextWindow(n_observed);

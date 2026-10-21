@@ -1,13 +1,13 @@
 // notebook.component.ts
 import { Component, computed, inject, Signal} from '@angular/core';
-import { DatePipe, PercentPipe } from '@angular/common';
+import { DatePipe, PercentPipe,JsonPipe } from '@angular/common';
 import { AppStatusService } from '../services/app-status-service';
 import { GeneDiseaseEntity, GeneMatch, OverlapData, PhenoBlendAnalysis, SimpleOntologyTerm, TermMatches, UpsetData } from '../models/notebook';
 
 @Component({
   selector: 'app-notebook',
   standalone: true,
-  imports: [DatePipe, PercentPipe],
+  imports: [DatePipe, JsonPipe, PercentPipe],
   templateUrl: './notebook.component.html',
   styleUrls: ['./notebook.component.scss'],
 })

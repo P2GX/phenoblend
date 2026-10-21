@@ -199,7 +199,7 @@ fn sort_zero_matches(mut keys: Vec<ZeroMatchKey>) -> Vec<ZeroMatchKey> {
     keys
 }
 
-/// Sorts the columns (gene entities) and rows (PresenceMatrixItem) following the
+/// Sorts the columns (gene entities) and rows (OverlapPlotItem) following the
 /// explicit hierarchical block rules established in the Python pipeline.
 pub fn sort_presence_payload(payload: OverlapPlotPayload) -> OverlapPlotPayload {
     if payload.entities.is_empty() || payload.columns.is_empty() {
@@ -248,6 +248,7 @@ mod tests {
         OverlapPlotItem {
             hpo_id: hpo_id.to_string(),
             hpo_name: name.to_string(),
+            severity: None,
             scores: scores.iter().map(|(k, v)| (k.to_string(), *v)).collect(),
         }
     }

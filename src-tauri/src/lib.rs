@@ -1,7 +1,6 @@
 pub mod phenoblend;
 
 mod enrichment;
-mod excel;
 mod hpoa;
 mod hpo;
 mod model;
@@ -26,6 +25,7 @@ use std::sync::{Arc, Mutex};
 use ga4ghphetools::{pick_file_and_process, load_ontology, OntologyLoadEvent};
 
 
+use crate::blend::dto::ObservedHpoInput;
 use crate::blend::dto::UpsetPlotPayload;
 use crate::blend::dto::SpreadPlotPayload;
 use crate::enrichment::dto::DuoEnrichmentSummary;
@@ -168,7 +168,7 @@ fn check_initialization_status(state: tauri::State<'_, Arc<AppState>>) -> Result
 #[tauri::command]
 async fn add_observed_hpos_from_ner(
     state: tauri::State<'_, Arc<AppState>>,
-    observed: Vec<String>
+    observed: Vec<ObservedHpoInput>
 ) -> Result<(), String>{
     let state_handle = state.inner().clone();
     let mut singleton = state_handle.phenoblend.lock().map_err(|e| e.to_string())?;

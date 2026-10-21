@@ -1,5 +1,6 @@
 use flate2::bufread::GzDecoder;
 use ontolius::{ontology::csr::FullCsrOntology, io::OntologyLoaderBuilder};
+use phenopackets::schema::v2::Phenopacket;
 use rstest::fixture;
 use std::{
     fs::File,
@@ -35,4 +36,18 @@ pub static HPO: LazyLock<Arc<FullCsrOntology>> = LazyLock::new(|| {
 #[fixture]
 pub fn hpo() -> Arc<FullCsrOntology> {
     Arc::clone(&HPO)
+}
+
+
+const A13_JSON: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"), "/resources/data/PMID_27082122_A13.json"
+));
+
+pub fn a13_ppkt() -> Phenopacket {
+    serde_json::from_str(A13_JSON).expect("fixture must parse as a Phenopacket")
+}
+
+#[rstest::fixture]
+pub fn a13() -> Phenopacket { 
+    a13_ppkt() 
 }
