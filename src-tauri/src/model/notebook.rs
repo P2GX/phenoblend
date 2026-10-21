@@ -5,8 +5,8 @@
 
 use uuid::Uuid;
 
-use crate::{blend::{disease_gene_entity::GeneDiseaseEntity, dto::{OverlapData, OverlapPlotPayload, PhenoBlendAnalysis, Severity, SpreadPlotPayload, UpsetPlotPayload}, upset_plot::UpsetData}, model::simple_term::SimpleOntologyTerm};
-use std::{collections::BTreeMap, time::{SystemTime, UNIX_EPOCH}};
+use crate::{blend::{disease_gene_entity::GeneDiseaseEntity, dto::{OverlapData, OverlapPlotPayload, PhenoBlendAnalysis, Severity, SpreadPlotPayload, UpsetData, UpsetPlotPayload}}, model::simple_term::SimpleOntologyTerm};
+use std::time::{SystemTime, UNIX_EPOCH};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 

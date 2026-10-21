@@ -188,12 +188,12 @@ impl PhenoblendSingleton {
             .ok_or_else(|| "Missing required resource: HPO Ontology".to_string())?;
         
         let proband = self.individual.clone();
-        let pm = crate::blend::overlap_matrix::calculate_overlap_matrix(
+        let pm = crate::blend::overlap_payload::calculate_overlap_matrix(
             hpo.clone(), 
             &annotations, 
             &self.hpo_term_to_disease_count_d, 
             proband)?;
-        Ok(crate::blend::overlap_matrix::sort_presence_payload(pm))
+        Ok(crate::blend::overlap_payload::sort_presence_payload(pm))
     }
 
     pub fn get_upset_plot_payload(
@@ -426,11 +426,7 @@ impl PhenoblendSingleton {
 
         let term_matches =
             crate::blend::disease_gene_entity::compute_term_matches(&self.individual, entities, &self.hpo_term_to_disease_count_d, hpo.as_ref())?;
-        
-        let symbols: Vec<String> = entities
-            .iter()
-            .map(|gde| gde.gene_symbol.clone())
-            .collect_vec();
+    
         let overlap = OverlapData::from_term_matches(
             entities.iter().map(|g| g.gene_symbol.clone()),
             &term_matches,
@@ -468,7 +464,7 @@ impl PhenoblendSingleton {
     ) -> Result<Notebook, String> {
         let hpo = self.get_hpo().ok_or("Could not retrieve HPO".to_string())?;
        // self.calculate_disease_counts(hpo.as_ref())?;
-        let entities = crate::blend::overlap_matrix::build_entity_list(&gda_list)?;
+        let entities = crate::blend::overlap_payload::build_entity_list(&gda_list)?;
         let analysis = self.run_analysis(&entities)?;   // may fail: nothing changed yet
         let nb = self.notebook_mut()?;
         nb.gene_disease_list = entities;

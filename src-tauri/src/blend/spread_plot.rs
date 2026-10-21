@@ -16,11 +16,9 @@ use ontolius::TermId;
 
 use crate::blend::disease_gene_entity::GeneDiseaseEntity;
 use crate::blend::dto::{
-    assign_to_categories, CategoryAssignment, SeriesSummary, SeriesTerms, SpreadPlotCategory,
-    SpreadPlotPayload,
+    CategoryAssignment, SeriesSummary, SeriesTerms, SpreadPlotCategory, SpreadPlotPayload, UpsetData, assign_to_categories,
 };
-use crate::blend::upset_plot::{simple_term, UpsetData};
-use crate::model::proband::Proband;
+use crate::blend::upset_plot::{simple_term};
 use crate::model::simple_term::SimpleOntologyTerm;
 
 /// The plot has one column for every non-empty subset of the genotypes (2^n - 1).

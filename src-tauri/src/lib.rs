@@ -46,7 +46,7 @@ pub fn run() {
     let app_state = Arc::new(AppState {
         phenoblend: Mutex::new(PhenoblendSingleton::new()),
     });
-    let log_level = log::LevelFilter::Trace;
+    let log_level = log::LevelFilter::Warn;
 
     tauri::Builder::default()
         .manage(app_state)

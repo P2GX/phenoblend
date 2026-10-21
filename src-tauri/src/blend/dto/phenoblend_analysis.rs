@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
-use crate::{blend::{dto::{overlap_dto::{OverlapData, OverlapPlotPayload, TermMatches}, spread_dto::SpreadPlotPayload, upset_dto::UpsetPlotPayload}, upset_plot::UpsetData}, model::simple_term::SimpleOntologyTerm};
+use crate::{blend::dto::{UpsetData, overlap_dto::{OverlapData, OverlapPlotPayload, TermMatches}, spread_dto::SpreadPlotPayload, upset_dto::UpsetPlotPayload}, model::simple_term::SimpleOntologyTerm};
 
 
 
