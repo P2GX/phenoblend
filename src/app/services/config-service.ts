@@ -5,6 +5,7 @@ import { FenominalSentence, HierarchyMapItem, OntologyMatch, HpoTermMinimal } fr
 import { InitializationStatusDto } from '../models/status_dto'; 
 import { DuoEnrichmentSummary, GeneDiseaseAnnotations, GeneDiseaseAssociation, ObservedHpoInput } from '../models/interfaces';
 import { OverlapPlotPayload, SpreadPlotPayload, UpsetPlotPayload } from 'ngx-phenoprofile';
+import { UpsetPlotData } from '../models/notebook';
 
 @Injectable({
   providedIn: 'root'
@@ -32,8 +33,9 @@ export class ConfigService {
     return await invoke("get_overlap_plot");
   }
 
-  async getUpsetPlotPayload(): Promise<UpsetPlotPayload> {
-    return await invoke<UpsetPlotPayload>("get_upset_plot_payload");
+  async getUpsetPlotData(): Promise<UpsetPlotData> {
+    console.log("service, getUpsetPlotData")
+    return await invoke<UpsetPlotData>("get_upset_plot_data");
   }
 
   async getSpreadPlotPayload(): Promise<SpreadPlotPayload> {

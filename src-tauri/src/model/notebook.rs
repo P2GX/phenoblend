@@ -5,7 +5,7 @@
 
 use uuid::Uuid;
 
-use crate::{blend::{disease_gene_entity::GeneDiseaseEntity, dto::{OverlapData, OverlapPlotPayload, PhenoBlendAnalysis, Severity, SpreadPlotPayload, UpsetData, UpsetPlotPayload}}, model::simple_term::SimpleOntologyTerm};
+use crate::{blend::{disease_gene_entity::GeneDiseaseEntity, dto::{OverlapData, OverlapPlotPayload, PhenoBlendAnalysis, SpreadPlotPayload, UpsetPlotData}}, model::simple_term::SimpleOntologyTerm};
 use std::time::{SystemTime, UNIX_EPOCH};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
@@ -58,12 +58,12 @@ impl Notebook {
         Notebook::new(observed_hpo, data_input_history)
     }
 
-    pub fn upset_payload(&self) -> Result<UpsetPlotPayload, String> {
+    pub fn upset_payload(&self) -> Result<UpsetPlotData, String> {
            let analysis = self.analysis.as_ref().ok_or("Analysis not initialized")?;
            analysis.upset_payload()
     }
 
-     pub fn upset_data(&self) -> Result<UpsetData, String> {
+     pub fn upset_data(&self) -> Result<UpsetPlotData, String> {
            let analysis = self.analysis.as_ref().ok_or("Analysis not initialized")?;
            Ok(analysis.upset.clone())
     }

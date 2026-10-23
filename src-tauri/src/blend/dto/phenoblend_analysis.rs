@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
-use crate::{blend::dto::{UpsetData, overlap_dto::{OverlapData, OverlapPlotPayload, TermMatches}, spread_dto::SpreadPlotPayload, upset_dto::UpsetPlotPayload}, model::simple_term::SimpleOntologyTerm};
+use crate::{blend::dto::{UpsetPlotData, overlap_dto::{OverlapData, OverlapPlotPayload, TermMatches}, spread_dto::SpreadPlotPayload}, model::simple_term::SimpleOntologyTerm};
 
 
 
@@ -12,7 +12,7 @@ pub struct PhenoBlendAnalysis {
     /// All annotated terms per gene entity (needed later for the UpSet "annotated" bars).
     pub gene_annotations: BTreeMap<String, Vec<SimpleOntologyTerm>>,
     pub overlap: OverlapData,
-    pub upset: UpsetData,   
+    pub upset: UpsetPlotData,   
     pub spread: SpreadPlotPayload, 
 }
 
@@ -22,7 +22,7 @@ impl PhenoBlendAnalysis {
         term_matches: Vec<TermMatches>,
         annotations: BTreeMap<String, Vec<SimpleOntologyTerm>>,
         overlap: OverlapData,
-        upset: UpsetData,
+        upset: UpsetPlotData,
         spread: SpreadPlotPayload) -> Self {
             Self { 
                 term_matches, 
@@ -33,9 +33,9 @@ impl PhenoBlendAnalysis {
             }
     } 
 
-    pub fn upset_payload(&self) -> Result<UpsetPlotPayload, String> {
-        self.upset.build_upset_payload()
-    }
+    pub fn upset_payload(&self) -> Result<UpsetPlotData, String> {
+    Ok(self.upset.clone())
+}
 
     pub fn overlap_payload(&self) -> Result<OverlapPlotPayload, String> {
         Ok(self.overlap.to_payload())

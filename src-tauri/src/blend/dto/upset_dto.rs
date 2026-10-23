@@ -1,87 +1,60 @@
 
-use ontolius::TermId;
+use std::collections::{BTreeMap, BTreeSet};
+use ontolius::{TermId, ontology::{TaxonomyWalk, csr::FullCsrOntology}};
 use serde::{Serialize, Deserialize};
 
 
-use crate::{ model::simple_term::SimpleOntologyTerm, util::serde_util::serialize_term_id_vec};
+use crate::model::simple_term::SimpleOntologyTerm;
+
+
+pub type TermKey = String; // CURIE, e.g. "HP:0001250"
+pub type GeneKey = String; // gene symbol, e.g. "NF1"
 
 
 
-
-
-
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// HPO annotations of one gene, pooled across all diseases associated with it.
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct UpsetPlotPayload {
-    /// The unique gene symbols being evaluated (e.g., ["MBNL1", "DMPK"])
-    pub genes: Vec<String>,
-    
-    /// List of combinations, where each combination is a subset of gene symbols
-    pub combinations: Vec<Vec<String>>,
-    
-    /// Total annotated HPO term intersection sizes per combination (Top-Right background bars)
-    pub combination_annotated: Vec<u32>,
-    
-    /// Subsets of those terms overlapping with patient phenotypes (Top-Right foreground bars)
-    pub combination_observed: Vec<u32>,
-    
-    /// Total annotated HPO term sizes per individual gene (Bottom-Left background bars)
-    pub gene_annotated: Vec<u32>,
-    
-    /// Total terms per individual gene overlapping with patient phenotypes (Bottom-Left foreground bars)
-    pub gene_observed: Vec<u32>,
+pub struct GeneTerms {
+    /// Terms directly annotated to the gene's disease(s).
+    pub annotated: BTreeSet<TermKey>,
+    /// `annotated` plus all ancestors (true-path closure); always a superset of `annotated`.
+    pub closure: BTreeSet<TermKey>,
 }
 
 
-/* 
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UpsetGene {
-    /// Gene symbol of gene associated with a disease
-    gene_symbol: String,
-    /// HPO terms observed in proband and also associated with gene (explicit only)
-    #[serde(serialize_with = "serialize_term_id_vec")]
-    proband_overlapped_tids: Vec<TermId>,
-    /// HPO Terms annotation to the gene but not reported in the proband (explicit only)
-    #[serde(serialize_with = "serialize_term_id_vec")]
-    remaining_annotated_tids: Vec<TermId>
-}*/
-
-/// One **horizontal** bar: all explicit annotations of one disease/gene entity, including
-/// terms it shares with the others.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UpsetGene {
-    pub gene_symbol: String,
-    #[serde(flatten)]
-    pub terms: TermSplit,
+/// The true-path closure of `t`: `t` itself plus all of its ancestors.
+pub fn closure_of(hpo: &FullCsrOntology, t: &TermId) -> BTreeSet<TermKey> {
+    let closure: BTreeSet<TermKey> = hpo
+        .iter_term_and_ancestor_ids(t)
+        .map(|a| a.to_string())
+        .collect();
+    closure
 }
 
-/*
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UpsetIntersection {
-    /// Gene symbol or symbols for intersection (on vertical of upset plot)
-    gene_symbol_list: Vec<String>,
-     /// HPO terms observed in proband and also associated with gene (explicit only)
-    #[serde(serialize_with = "serialize_term_id_vec")]
-    proband_overlapped_tids: Vec<TermId>,
-    /// HPO Terms annotation to the gene but not reported in the proband (explicit only)
-    #[serde(serialize_with = "serialize_term_id_vec")]
-    remaining_annotated_tids: Vec<TermId>
-} */
+impl GeneTerms {
+    pub fn add_term(&mut self, hpo: &FullCsrOntology, t: &TermId) {
+        self.annotated.insert(t.to_string());
+        self.closure.extend(closure_of(hpo, t));
+    }
+}
 
 
-/// `gene_symbol_list` and to no other entity. Each annotation appears in at most one
-/// intersection.
+/// Term closures of the proband and of every gene: the input to [`plot_data`].
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct UpsetIntersection {
-    pub gene_symbol_list: Vec<String>,
-    #[serde(flatten)]
-    pub terms: TermSplit,
+pub struct UpsetPlotInput {
+    /// Key: an HPO term observed in the proband; value: that term plus all of its ancestors.
+    /// Duplicate observed terms collapse into one entry.
+    pub proband_closures: BTreeMap<TermKey, BTreeSet<TermKey>>,
+    /// Key: gene symbol; value: HPO annotations of all diseases associated with the gene.
+    pub gene_annotations: BTreeMap<GeneKey, GeneTerms>,
 }
+
+
+
+
+
 
 /// A disease annotation that the proband has, with the proband term that accounts for it.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -95,44 +68,87 @@ pub struct MatchedTerm {
     pub matched_by: SimpleOntologyTerm,
 }
 
-/// A group of disease annotations split by whether the proband has them.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TermSplit {
-    /// Green: annotations the proband has (exactly, or through a descendant).
-    pub proband_overlapped: Vec<MatchedTerm>,
-    /// Purple: annotations the proband does not have.
-    pub remaining_annotated: Vec<SimpleOntologyTerm>,
-}
-
-impl TermSplit {
-    /// Height of the green part.
-    pub fn n_observed(&self) -> u32 {
-        self.proband_overlapped.len() as u32
-    }
-
-    /// Height of the whole bar (purple + green).
-    pub fn n_annotated(&self) -> u32 {
-        (self.proband_overlapped.len() + self.remaining_annotated.len()) as u32
-    }
-}
 
 
 
-/// One **vertical** bar: the annotations that belong to exactly the entities in
 
-
-/// Everything behind one UpSet plot.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct UpsetData {
-    /// Horizontal bars, sorted by gene symbol.
-    pub genes: Vec<UpsetGene>,
-    /// Vertical bars, sorted by number of entities and then alphabetically.
-    pub intersections: Vec<UpsetIntersection>,
-    /// Proband terms that no disease annotation accounts for (no disease term equals the
-    /// term or is one of its ancestors). They are not drawn in the plot.
-    pub proband_only: Vec<SimpleOntologyTerm>,
-    /// Number of distinct observed terms of the proband.
+pub struct UpsetPlotData {
+    /// Horizontal bars (one per gene), sorted by gene symbol.
+    ///
+    /// The full length of every bar is the number of distinct HPO terms of the proband;
+    /// the highlighted part is the number of those terms that the gene accounts for
+    /// (see the module documentation for the matching rule).
+    ///
+    /// Example: the proband has 20 HPO terms, 4 of which overlap gene A and 7 gene B.
+    /// Both bars are 20 units long, with highlights of 4 units for A and 7 units for B.
+    pub rows: Vec<UpsetRowData>,
+
+    /// Vertical bars, one per gene and one per combination of 2 to 4 genes, sorted by
+    /// `n_overlapping_terms` descending, then `n_annotated_terms` descending, then
+    /// `row_indices`.
+    ///
+    /// Combinations are *inclusive*: the A+B column also counts terms that gene C has.
+    /// Only genes that overlap at least one proband term are combined, and combinations
+    /// without any overlap are omitted.
+    ///
+    /// Example: gene A has 40 annotations, of which 4 overlap the proband, so its column is
+    /// 40 units high with a highlight of 4. For A+B, the annotations common to both genes
+    /// (see [`UpsetColumnData::n_annotated_terms`]) set the height.
+    pub columns: Vec<UpsetColumnData>,
+
+    pub summary: UpsetSummary,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpsetRowData {
+    pub gene_symbol: String,
+    /// Number of distinct HPO terms observed in the proband (an individual represented by a
+    /// phenopacket or a list of observed HPO terms). Identical in every row; it is the full
+    /// bar length.
     pub n_proband_terms: usize,
+    /// How many of those proband terms overlap the gene's annotations (pooled across all of
+    /// the gene's diseases): the term is annotated to the gene or is a descendant of an
+    /// annotated term (true-path rule).
+    ///
+    /// Formally, the number of proband terms `p` with
+    /// `gene.annotated ∩ proband_closures[p] ≠ ∅`.
+    pub n_overlapping_terms: usize,
+}
+
+/// One column of the pheno-upset plot: the phenotypic profile of one gene (e.g. NF1) or of a
+/// combination of genes (e.g. NF1+PTPN11).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpsetColumnData {
+    /// Filled dots: indices into `rows`, ascending.
+    pub row_indices: Vec<usize>,
+    /// Number of distinct HPO terms shared by all genes of the column under the true-path
+    /// rule. A term counts if every gene is annotated with it or with one of its descendants,
+    /// and it is explicitly annotated to at least one of the genes. The more general term
+    /// represents the shared annotation: if gene A has HP:1, gene B has HP:2 and HP:1 is a
+    /// descendant of HP:2, then HP:2 is counted once, but ancestors of HP:2 that no gene
+    /// annotates are not. For a single gene this is the number of its annotated terms.
+    pub n_annotated_terms: usize,
+    /// How many of the `n_annotated_terms` shared terms the proband matches, that is, that
+    /// equal or are an ancestor of an observed proband term. Each shared term counts once,
+    /// however many proband terms fall under it, so this never exceeds `n_annotated_terms`.
+    pub n_overlapping_terms: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpsetSummary {
+    /// Number of distinct HPO terms observed in the proband.
+    pub n_proband_terms: usize,
+    /// Distinct proband terms that overlap at least one gene's annotations.
+    pub n_proband_explained: usize,
+    /// Distinct proband terms that overlap no gene (`n_proband_terms - n_proband_explained`).
+    pub n_proband_unexplained: usize,
+    /// Axis maximum for the columns: the largest `n_annotated_terms`.
+    pub max_column: usize,
+    /// Axis maximum for the rows: every bar has length `n_proband_terms`.
+    pub max_row: usize,
 }

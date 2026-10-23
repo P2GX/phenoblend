@@ -145,7 +145,7 @@ export class UpsetPlotComponent implements OnChanges {
       .attr('fill', '#000')
       .style('text-anchor', 'middle')
       .style('font-size', '11px')
-      .text('Intersection Size');
+      .text('Disease models');
 
     // ==========================================
     // 3. BOTTOM LEFT: MARGINAL GENE BARS (ax_marginal)
@@ -200,7 +200,7 @@ export class UpsetPlotComponent implements OnChanges {
       .attr('fill', '#000')
       .style('text-anchor', 'middle')
       .style('font-size', '11px')
-      .text('Set Size');
+      .text('Individual');
 
     // ==========================================
     // 4. BOTTOM RIGHT: DOT MATRIX LAYOUT (ax_matrix)

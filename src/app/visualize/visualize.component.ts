@@ -19,6 +19,7 @@ import {
   OverlapPlotPayload,
   UpsetPlotPayload,
 } from 'ngx-phenoprofile';
+import { toLegacyPayload } from '../models/notebook';
 
 //  3 view modes
 type VisualizationType = 'overlap' | 'upset' | 'spread';
@@ -94,12 +95,13 @@ export class PhenotypeProfileVisualizerComponent implements OnInit {
         return acc;
       }, new Map<string, GeneDiseaseAssociation[]>());
  
-      
+      console.log("visualize")
       await this.configService.initializeNotebook(annotationMap);
       const overlapResult =
         await this.configService.getOverlapPlotData();
-      const upsetResult =
-        await this.configService.getUpsetPlotPayload();
+      const upsetPlotData =
+        await this.configService.getUpsetPlotData();
+      const upsetResult = toLegacyPayload(upsetPlotData);
       const spreadResult =
         await this.configService.getSpreadPlotPayload();
       this.upsetData.set(upsetResult);
@@ -109,6 +111,7 @@ export class PhenotypeProfileVisualizerComponent implements OnInit {
       this.notificationService.showError(
         `Failed fetching matrix values: ${err}.`,
       );
+      console.log(`Failed fetching matrix values: ${err}.`);
     } finally {
       this.isLoading.set(false);
     }

@@ -1,6 +1,6 @@
 [package]
 name = "phenoblend"
-version = "0.4.10"
+version = "0.4.12"
 description = "Phenoblend"
 authors = ["Peter N Robinson"]
 edition = "2021"
@@ -46,7 +46,6 @@ csv = "1.4.0"
 phenopackets = "0.2.2-post2"
 itertools = "0.15.0"
 svg2pdf = "0.13"
-rust_xlsxwriter = "0.99"
 log = "0.4"
 tauri-plugin-log = "2"
 statrs = "0.19"

@@ -14,11 +14,11 @@ use ontolius::ontology::{OntologyTerms, TaxonomyQuery, TaxonomyWalk};
 use ontolius::term::MinimalTerm;
 use ontolius::TermId;
 
-use crate::blend::disease_gene_entity::GeneDiseaseEntity;
+use crate::blend::disease_gene_entity::{GeneDiseaseEntity, simple_term};
 use crate::blend::dto::{
-    CategoryAssignment, SeriesSummary, SeriesTerms, SpreadPlotCategory, SpreadPlotPayload, UpsetData, assign_to_categories,
+    CategoryAssignment, SeriesSummary, SeriesTerms, SpreadPlotCategory, SpreadPlotPayload, assign_to_categories,
 };
-use crate::blend::upset_plot::{simple_term};
+
 use crate::model::simple_term::SimpleOntologyTerm;
 
 /// The plot has one column for every non-empty subset of the genotypes (2^n - 1).
@@ -365,38 +365,6 @@ impl SpreadPlotPayload {
     }
 }
 
-/// Cross-checks the spread plot against the UpSet data and the gene list both were built from:
-/// the same genes, the same number of observed terms, and every combination drawn in the UpSet
-/// plot is also a column of the spread plot (same "+"-joined label, so pass the genotypes
-/// sorted alphabetically, as the UpSet plot sorts them).
-pub fn check_plots_agree(
-    gene_symbols: &[String],
-    upset: &UpsetData,
-    spread: &SpreadPlotPayload,
-) -> Result<(), String> {
-    let mut expected: Vec<&str> = gene_symbols.iter().map(String::as_str).collect();
-    expected.sort();
-    expected.dedup();
-    let mut upset_genes: Vec<&str> = upset.genes.iter().map(|g| g.gene_symbol.as_str()).collect();
-    upset_genes.sort();
-    if upset_genes != expected {
-        return Err(format!("UpSet genes {upset_genes:?} differ from {expected:?}"));
-    }
-    if upset.n_proband_terms != spread.n_ppkt_terms {
-        return Err(format!(
-            "UpSet counts {} observed terms but the spread plot {}",
-            upset.n_proband_terms, spread.n_ppkt_terms
-        ));
-    }
-    let series: HashSet<&str> = spread.series_labels.iter().skip(1).map(String::as_str).collect();
-    for i in &upset.intersections {
-        let label = i.gene_symbol_list.join("+");
-        if !series.contains(label.as_str()) {
-            return Err(format!("UpSet combination {label} is missing from the spread plot"));
-        }
-    }
-    Ok(())
-}
 
 #[cfg(test)]
 mod tests {
@@ -516,7 +484,7 @@ mod tests {
 #[cfg(test)]
 mod payload_tests {
     use super::*;
-    use crate::blend::upset_plot::upset_data;
+ 
 
     fn tid(s: &str) -> TermId { s.parse().unwrap() }
 
@@ -701,27 +669,5 @@ mod payload_tests {
         assert!(misaligned.validate().is_err());
     }
 
-    #[test]
-    fn plots_agree_or_the_difference_is_named() {
-        let ents = two_genes();
-        let obs: Vec<TermId> = ["HP:0010920", "HP:0001250"].iter().map(|s| tid(s)).collect();
-        let upset = upset_data(&obs, &ents, |t| vec![t.clone()], to_term);
-        let genes = vec!["A".to_string(), "B".to_string()];
-
-        let spread = payload(&["HP:0010920", "HP:0001250"], &["A", "B"], &ents).unwrap();
-        check_plots_agree(&genes, &upset, &spread).unwrap();
-
-        // genotypes passed in a different order give "B+A", which the UpSet plot calls "A+B"
-        let unsorted = payload(&["HP:0010920", "HP:0001250"], &["B", "A"], &ents).unwrap();
-        let err = check_plots_agree(&genes, &upset, &unsorted).unwrap_err();
-        assert!(err.contains("A+B"), "{err}");
-
-        // a different number of observed terms
-        let one: Vec<TermId> = vec![tid("HP:0010920")];
-        let upset_one = upset_data(&one, &ents, |t| vec![t.clone()], to_term);
-        assert!(check_plots_agree(&genes, &upset_one, &spread).is_err());
-
-        // a different gene list
-        assert!(check_plots_agree(&["A".to_string()], &upset, &spread).is_err());
-    }
+   
 }

@@ -1,4 +1,4 @@
-import { Severity } from "ngx-phenoprofile";
+import { Severity, UpsetPlotPayload } from "ngx-phenoprofile";
 
 // notebook.model.ts
 export interface SimpleOntologyTerm {
@@ -82,6 +82,29 @@ export interface UpsetData {
   /** Number of distinct observed terms of the proband. */
   nProbandTerms: number;
 }
+
+
+
+export interface UpsetRowData { geneSymbol: string; nProbandTerms: number; nOverlappingTerms: number; }
+export interface UpsetColumnData { rowIndices: number[]; nAnnotatedTerms: number; nOverlappingTerms: number; }
+export interface UpsetSummary {
+  nProbandTerms: number; nProbandExplained: number; nProbandUnexplained: number;
+  maxColumn: number; maxRow: number;
+}
+export interface UpsetPlotData { rows: UpsetRowData[]; columns: UpsetColumnData[]; summary: UpsetSummary; }
+
+export function toLegacyPayload(d: UpsetPlotData): UpsetPlotPayload {
+  const genes = d.rows.map((r) => r.geneSymbol);
+  return {
+    genes,
+    combinations: d.columns.map((c) => c.rowIndices.map((i) => genes[i])),
+    combinationAnnotated: d.columns.map((c) => c.nAnnotatedTerms),
+    combinationObserved: d.columns.map((c) => c.nOverlappingTerms),
+    geneAnnotated: d.rows.map((r) => r.nProbandTerms),
+    geneObserved: d.rows.map((r) => r.nOverlappingTerms),
+  };
+}
+
 
 export interface SeriesTerms { series: string; terms: SimpleOntologyTerm[]; }
 export interface SeriesSummary { series: string; nTerms: number; uncategorized: SimpleOntologyTerm[]; }

@@ -5,7 +5,6 @@ use std::{collections::HashMap, sync::Arc};
 use fenominal::{AutoCompleter, Fenominal, FenominalSentence, OntologyMatch};
 use ga4ghphetools::{dto::hpo_term_dto::HpoTermDuplet, load_ontology};
 use ga4ghphetools::HierarchyMapItem;
-use itertools::Itertools;
 use ontolius::ontology::{MetadataAware, OntologyTerms};
 use ontolius::{TermId,  ontology::csr::FullCsrOntology};
 use phenopackets::schema::v2::Phenopacket;
@@ -14,8 +13,8 @@ use rand::rngs::StdRng;
 
 
 use crate::blend::disease_gene_entity::GeneDiseaseEntity;
-use crate::blend::dto::{ObservedHpoInput, OverlapData, PhenoBlendAnalysis, Severity, SpreadPlotPayload, UpsetPlotPayload, severity_from_ids};
-use crate::blend::spread_plot::{build_spread_payload, check_plots_agree};
+use crate::blend::dto::{ObservedHpoInput, OverlapData, PhenoBlendAnalysis, Severity, SpreadPlotPayload, UpsetPlotData, severity_from_ids};
+use crate::blend::spread_plot::build_spread_payload;
 use crate::enrichment::dto::DuoEnrichmentSummary;
 use crate::enrichment::gdannotation_source::{GeneDiseaseAnnotationSource, OntoliusDescendants};
 use crate::enrichment::melded_ppkt::MeldedPpkt;
@@ -196,9 +195,9 @@ impl PhenoblendSingleton {
         Ok(crate::blend::overlap_payload::sort_presence_payload(pm))
     }
 
-    pub fn get_upset_plot_payload(
+    pub fn get_upset_plot_data(
         &self,
-    )  -> Result<UpsetPlotPayload, String> {
+    )  -> Result<UpsetPlotData, String> {
         let nb = self.notebook.as_ref().ok_or("Notebook not initialized")?;
         let ana = nb.analysis.as_ref().ok_or("Analysis not initialized")?;
         ana.upset_payload()
@@ -432,21 +431,30 @@ impl PhenoblendSingleton {
             &term_matches,
         );
        
-        let gene_annotations = entities
-            .iter()
-            .map(|g| {
-                let mut ids: Vec<&TermId> = g.disease_hpo_ids.iter().collect();
-                ids.sort_by_key(|t| t.to_string());
-                let terms = ids.into_iter().map(|t| crate::blend::disease_gene_entity::simple_term(hpo.as_ref(), t)).collect();
-                (g.gene_symbol.clone(), terms)
+        let mut ids_by_gene: BTreeMap<String, BTreeMap<String, &TermId>> = BTreeMap::new();
+        for g in entities {
+            let ids = ids_by_gene.entry(g.gene_symbol.clone()).or_default();
+            for t in &g.disease_hpo_ids {
+                ids.insert(t.to_string(), t);
+            }
+        }
+        let gene_annotations = ids_by_gene
+            .into_iter()
+            .map(|(gene, ids)| {
+                let terms = ids
+                    .into_values()
+                    .map(|t| crate::blend::disease_gene_entity::simple_term(hpo.as_ref(), t))
+                    .collect();
+                (gene, terms)
             })
             .collect();
-        let upset = crate::blend::upset_plot::build_upset_data(entities, &observed, hpo.as_ref())?;
+     //   let upset = crate::blend::upset_plot::build_upset_data(entities, &observed, hpo.as_ref())?;
+        let upset_input = crate::blend::upset_plot::plot_input(entities, &observed, &hpo);
+        let upset = crate::blend::upset_plot::plot_data(&upset_input);
         let mut genotypes: Vec<String> = entities.iter().map(|g| g.gene_symbol.clone()).collect();
         genotypes.sort();
         genotypes.dedup();
         let spread = build_spread_payload(&observed, &genotypes, entities, hpo.as_ref())?;
-        check_plots_agree(&genotypes, &upset, &spread)?; 
         Ok(PhenoBlendAnalysis { term_matches, gene_annotations, overlap, upset, spread })
     }
 

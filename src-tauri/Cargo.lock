@@ -3925,7 +3925,7 @@ dependencies = [
 
 [[package]]
 name = "phenoblend"
-version = "0.4.10"
+version = "0.4.12"
 dependencies = [
  "chrono",
  "csv",
@@ -3943,7 +3943,6 @@ dependencies = [
  "reqwest",
  "rfd",
  "rstest",
- "rust_xlsxwriter",
  "serde",
  "serde_json",
  "statrs",
@@ -4862,15 +4861,6 @@ dependencies = [
  "serde",
  "serde_json",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "rust_xlsxwriter"
-version = "0.99.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34f2d2cda7223168a14fb86bc7411dbc3379bd7d49749ecc53b91ed98585b6b0"
-dependencies = [
- "zip 8.6.0",
 ]
 
 [[package]]
@@ -7988,20 +7978,6 @@ name = "zip"
 version = "7.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c42e33efc22a0650c311c2ef19115ce232583abbe80850bc8b66509ebef02de0"
-dependencies = [
- "crc32fast",
- "flate2",
- "indexmap 2.14.0",
- "memchr",
- "typed-path",
- "zopfli",
-]
-
-[[package]]
-name = "zip"
-version = "8.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d04a6b5381502aa6087c94c669499eb1602eb9c5e8198e534de571f7154809b"
 dependencies = [
  "crc32fast",
  "flate2",

@@ -26,7 +26,7 @@ use ga4ghphetools::{pick_file_and_process, load_ontology, OntologyLoadEvent};
 
 
 use crate::blend::dto::ObservedHpoInput;
-use crate::blend::dto::UpsetPlotPayload;
+use crate::blend::dto::UpsetPlotData;
 use crate::blend::dto::SpreadPlotPayload;
 use crate::enrichment::dto::DuoEnrichmentSummary;
 use crate::model::Notebook;
@@ -79,7 +79,7 @@ pub fn run() {
             get_observed_hpo_count,
             get_overlap_plot,
             get_spread_plot_payload,
-            get_upset_plot_payload,
+            get_upset_plot_data,
             ingest_phenopacket,
             initialize_notebook,
             load_hpo,
@@ -242,12 +242,12 @@ fn get_overlap_plot(
 }
 
 #[tauri::command]
-fn get_upset_plot_payload(
+fn get_upset_plot_data(
     state: tauri::State<'_, Arc<AppState>>,
-) -> Result<UpsetPlotPayload, String> {
+) -> Result<UpsetPlotData, String> {
     let state_handle = state.inner().clone();
     let singleton = state_handle.phenoblend.lock().map_err(|e| e.to_string())?;
-    singleton.get_upset_plot_payload()
+    singleton.get_upset_plot_data()
 }
 
 #[tauri::command]

@@ -3,4 +3,4 @@ pub mod proband;
 pub mod simple_term;
 pub mod status;
 
-pub use notebook::{Notebook,emit_notebook, NOTEBOOK_EVENT};
+pub use notebook::{Notebook,emit_notebook};
