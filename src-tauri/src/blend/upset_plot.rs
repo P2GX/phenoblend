@@ -18,7 +18,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use ontolius::{TermId, ontology:: csr::FullCsrOntology};
 
 
-use crate::blend::{disease_gene_entity::GeneDiseaseEntity, dto::{GeneKey, GeneTerms, ROOT_PHENOTYPE_TERM_ID, TermKey, UpsetColumnData, UpsetPlotData, UpsetPlotInput, UpsetRowData, UpsetSummary, closure_of}};
+use crate::blend::{disease_gene_entity::GeneDiseaseEntity, dto::{GeneKey, GeneTerms, ProbandSegment, ROOT_PHENOTYPE_TERM_ID, TermKey, UpsetColumnData, UpsetPlotData, UpsetPlotInput, UpsetRowData, UpsetSummary, closure_of}};
 
 /// Most genes combined in one column. Multiple genetic diagnoses with more than four genes
 /// are not expected, and the number of combinations grows quickly.
@@ -94,6 +94,37 @@ fn combinations(items: &[usize], k: usize) -> Vec<Vec<usize>> {
     out
 }
 
+/// Partitions the proband's terms by the exact set of genes that overlap each of them.
+fn proband_breakdown(proband: &Closures, genes: &[&GeneTerms]) -> Vec<ProbandSegment> {
+    let mut counts: BTreeMap<Vec<usize>, usize> = BTreeMap::new();
+    for closure in proband.values() {
+        let signature: Vec<usize> = (0..genes.len())
+            .filter(|&i| !genes[i].annotated.is_disjoint(closure))
+            .collect();
+        *counts.entry(signature).or_default() += 1;
+    }
+
+    // Ordered by number of genes, then lexicographically.
+    let mut signatures: BTreeSet<(usize, Vec<usize>)> = BTreeSet::new();
+    if genes.len() <= MAX_GENES_PER_COLUMN {
+        let all: Vec<usize> = (0..genes.len()).collect();
+        for k in 0..=genes.len() {
+            signatures.extend(combinations(&all, k).into_iter().map(|s| (k, s)));
+        }
+    } else {
+        signatures.insert((0, Vec::new()));
+        signatures.extend(counts.keys().map(|s| (s.len(), s.clone())));
+    }
+
+    signatures
+        .into_iter()
+        .map(|(_, row_indices)| {
+            let n_terms = counts.get(&row_indices).copied().unwrap_or(0);
+            ProbandSegment { row_indices, n_terms }
+        })
+        .collect()
+}
+
 /// Step 2: derives the rows, columns and summary of the plot from the closures.
 pub fn plot_data(input: &UpsetPlotInput) -> UpsetPlotData {
     let proband = &input.proband_closures;
@@ -147,7 +178,19 @@ pub fn plot_data(input: &UpsetPlotInput) -> UpsetPlotData {
         max_column: columns.iter().map(|c| c.n_annotated_terms).max().unwrap_or(0),
         max_row: n_proband_terms,
     };
+    let proband_breakdown = proband_breakdown(proband, &genes);
 
-    UpsetPlotData { rows, columns, summary }
+    UpsetPlotData { rows, columns, proband_breakdown, summary }
 }
 
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+    use crate::tests::hpo_fixture::hpo;
+
+
+}

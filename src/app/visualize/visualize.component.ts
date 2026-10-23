@@ -17,7 +17,8 @@ import {
   OverlapPlotComponent,
   SpreadPlotPayload,
   OverlapPlotPayload,
-  UpsetPlotPayload,
+  UpsetPlotData,
+  UpsetPlotPayload
 } from 'ngx-phenoprofile';
 import { toLegacyPayload } from '../models/notebook';
 
@@ -42,7 +43,8 @@ export class PhenotypeProfileVisualizerComponent implements OnInit {
   private notificationService = inject(NotificationService);
 
   readonly matrixData = signal<OverlapPlotPayload | null>(null);
-  readonly upsetData = signal<UpsetPlotPayload | null>(null);
+  readonly upsetData = signal<UpsetPlotData | null>(null);
+  readonly upsetPayload = signal<UpsetPlotPayload | null>(null);
   readonly spreadData = signal<SpreadPlotPayload | null>(null);
   readonly isLoading = signal<boolean>(false);
   readonly activeView = signal<VisualizationType>('overlap');
@@ -104,7 +106,8 @@ export class PhenotypeProfileVisualizerComponent implements OnInit {
       const upsetResult = toLegacyPayload(upsetPlotData);
       const spreadResult =
         await this.configService.getSpreadPlotPayload();
-      this.upsetData.set(upsetResult);
+      this.upsetPayload.set(upsetResult);
+      this.upsetData.set(upsetPlotData);
       this.matrixData.set(overlapResult);
       this.spreadData.set(spreadResult);
     } catch (err) {

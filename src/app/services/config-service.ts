@@ -4,8 +4,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { FenominalSentence, HierarchyMapItem, OntologyMatch, HpoTermMinimal } from 'ng-hpo-uikit';
 import { InitializationStatusDto } from '../models/status_dto'; 
 import { DuoEnrichmentSummary, GeneDiseaseAnnotations, GeneDiseaseAssociation, ObservedHpoInput } from '../models/interfaces';
-import { OverlapPlotPayload, SpreadPlotPayload, UpsetPlotPayload } from 'ngx-phenoprofile';
-import { UpsetPlotData } from '../models/notebook';
+import { OverlapPlotPayload, SpreadPlotPayload , UpsetPlotData} from 'ngx-phenoprofile';
+
 
 @Injectable({
   providedIn: 'root'

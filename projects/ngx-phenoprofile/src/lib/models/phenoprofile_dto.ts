@@ -25,6 +25,23 @@ export interface UpsetPlotPayload {
 }
 
 
+
+export interface UpsetRowData { geneSymbol: string; nProbandTerms: number; nOverlappingTerms: number; }
+export interface UpsetColumnData { rowIndices: number[]; nAnnotatedTerms: number; nOverlappingTerms: number; }
+export interface ProbandSegment { rowIndices: number[]; nTerms: number; }
+
+export interface UpsetSummary {
+  nProbandTerms: number; nProbandExplained: number; nProbandUnexplained: number;
+  maxColumn: number; maxRow: number;
+}
+export interface UpsetPlotData { 
+  rows: UpsetRowData[]; 
+  columns: UpsetColumnData[]; 
+  probandBreakdown: ProbandSegment[];
+  summary: UpsetSummary; 
+}
+
+
 export interface SpreadPlotCategory {
   id: string;
   name: string;

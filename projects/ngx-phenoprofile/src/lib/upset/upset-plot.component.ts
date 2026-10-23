@@ -2,13 +2,18 @@ import {
   Component,
   ElementRef,
   input,
-  Input,
   OnChanges,
   SimpleChanges,
   ViewChild,
 } from '@angular/core';
 import * as d3 from 'd3';
-import { UpsetPlotPayload } from '../models/phenoprofile_dto';
+// UpsetPlotData and ProbandSegment mirror the Rust structs (camelCase JSON); add them to the
+// DTO file if they are not generated. UpsetPlotPayload is the old shape the D3 code draws from.
+import {
+  ProbandSegment,
+  UpsetPlotData,
+  UpsetPlotPayload,
+} from '../models/phenoprofile_dto';
 
 @Component({
   selector: 'app-upset-plot',
@@ -27,11 +32,12 @@ export class UpsetPlotComponent implements OnChanges {
   @ViewChild('chartContainer', { static: true })
   chartContainerRef!: ElementRef<HTMLElement>;
 
-  data = input.required<UpsetPlotPayload>();
+  data = input.required<UpsetPlotData>();
 
   private readonly BASE_COLOR = '#8D10CB';
   private readonly HIGHLIGHT_COLOR = '#66C2A5';
   private readonly LIGHT_GREY = '#E0E0E0';
+  private readonly NOT_EXPLAINED_COLOR = '#BDBDBD';
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['data'] && this.data()) {
@@ -39,10 +45,24 @@ export class UpsetPlotComponent implements OnChanges {
     }
   }
 
+  /** Reshapes the backend data into the arrays the drawing code below uses. */
+  private toPayload(d: UpsetPlotData): UpsetPlotPayload {
+    const genes = d.rows.map((r) => r.geneSymbol);
+    return {
+      genes,
+      combinations: d.columns.map((c) => c.rowIndices.map((i) => genes[i])),
+      combinationAnnotated: d.columns.map((c) => c.nAnnotatedTerms),
+      combinationObserved: d.columns.map((c) => c.nOverlappingTerms),
+      geneAnnotated: d.rows.map((r) => r.nProbandTerms),
+      geneObserved: d.rows.map((r) => r.nOverlappingTerms),
+    };
+  }
+
   private renderUpsetPlot(): void {
     const container = this.chartContainerRef.nativeElement;
     container.innerHTML = '';
 
+    const raw = this.data();
     const {
       genes,
       combinations,
@@ -50,7 +70,8 @@ export class UpsetPlotComponent implements OnChanges {
       combinationObserved,
       geneAnnotated,
       geneObserved,
-    } = this.data();
+    } = this.toPayload(raw);
+    const segments = raw.probandBreakdown;
 
     const nGenes = genes.length;
     const nCombos = combinations.length;
@@ -64,17 +85,23 @@ export class UpsetPlotComponent implements OnChanges {
     const matrixHeight = nGenes * cellSize;
     const xMatrixOffset = margin.left + marginalWidthMax + 65; // 65px gap
     const yMatrixOffset = margin.top + barHeightMax + 10; // 10px gap
+
+    // Breakdown bar and its legend sit beneath the upset plot
+    const breakdownBarHeight = 22;
+    const legendRowHeight = 20;
+    const breakdownTop = yMatrixOffset + matrixHeight + 55; // clears the axis label
+    const breakdownLegendTop = breakdownTop + breakdownBarHeight + 18;
+
     // Complete view boundaries
-    const totalWidth = xMatrixOffset + matrixWidth +  margin.right;
-    const totalHeight = yMatrixOffset + matrixHeight + margin.bottom;
+    const totalWidth = xMatrixOffset + matrixWidth + margin.right;
+    const totalHeight =
+      breakdownLegendTop + segments.length * legendRowHeight + margin.bottom;
 
     const svg = d3
       .select(container)
       .append('svg')
       .attr('width', totalWidth)
       .attr('height', totalHeight);
-
-    
 
     // ==========================================
     // 1. SCALES SETUP
@@ -279,7 +306,105 @@ export class UpsetPlotComponent implements OnChanges {
         .style('font-size', '12px')
         .text(item.text);
     });
+
+    // ==========================================
+    // 6. BOTTOM: PROBAND TERM BREAKDOWN BAR + LEGEND
+    // ==========================================
+    this.renderBreakdown(svg, raw, segments, genes, {
+      left: margin.left,
+      barTop: breakdownTop,
+      legendTop: breakdownLegendTop,
+      barWidth: totalWidth - margin.left - margin.right,
+      barHeight: breakdownBarHeight,
+      legendRowHeight,
+    });
+  }
+
+  /**
+   * One bar split into segments, one per set of genes that overlap the proband's terms
+   * (the first is "Not explained"), with a one-line-per-segment legend of counts and
+   * percentages. Zero-count segments get no rectangle but keep their legend line.
+   */
+  private renderBreakdown(
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+    raw: UpsetPlotData,
+    segments: ProbandSegment[],
+    genes: string[],
+    layout: {
+      left: number;
+      barTop: number;
+      legendTop: number;
+      barWidth: number;
+      barHeight: number;
+      legendRowHeight: number;
+    },
+  ): void {
+    const total = raw.summary.nProbandTerms;
+    const xTerms = d3
+      .scaleLinear()
+      .domain([0, total || 1])
+      .range([0, layout.barWidth]);
+
+    const label = (s: ProbandSegment) =>
+      s.rowIndices.length === 0
+        ? 'Not explained'
+        : s.rowIndices.map((i) => genes[i]).join('+');
+    const pct = (n: number) =>
+      total > 0 ? ((100 * n) / total).toFixed(1) : '0.0';
+
+    let nextColor = 0;
+    const colors = segments.map((s) =>
+      s.rowIndices.length === 0
+        ? this.NOT_EXPLAINED_COLOR
+        : d3.schemeTableau10[nextColor++ % d3.schemeTableau10.length],
+    );
+
+    const bar = svg
+      .append('g')
+      .attr('transform', `translate(${layout.left}, ${layout.barTop})`);
+
+    bar
+      .append('text')
+      .attr('y', -6)
+      .style('font-size', '11px')
+      .text(`Proband terms (n = ${total})`);
+
+    let offset = 0;
+    segments.forEach((s, i) => {
+      if (s.nTerms > 0) {
+        bar
+          .append('rect')
+          .attr('x', xTerms(offset))
+          .attr('width', xTerms(s.nTerms))
+          .attr('height', layout.barHeight)
+          .style('fill', colors[i]);
+        offset += s.nTerms;
+      }
+    });
+    bar
+      .append('rect')
+      .attr('width', layout.barWidth)
+      .attr('height', layout.barHeight)
+      .style('fill', 'none')
+      .style('stroke', '#999');
+
+    const legend = svg
+      .append('g')
+      .attr('transform', `translate(${layout.left}, ${layout.legendTop})`);
+
+    segments.forEach((s, i) => {
+      const row = legend
+        .append('g')
+        .attr('transform', `translate(0, ${i * layout.legendRowHeight})`);
+      row.append('rect').attr('width', 12).attr('height', 12).style('fill', colors[i]);
+      row
+        .append('text')
+        .attr('x', 20)
+        .attr('y', 10)
+        .style('font-size', '12px')
+        .text(`${label(s)}: ${s.nTerms} (${pct(s.nTerms)}%)`);
+    });
   }
 }
 
-export { UpsetPlotPayload };
+export { UpsetPlotPayload, UpsetPlotData };

@@ -40,6 +40,19 @@ impl GeneTerms {
 }
 
 
+/// One part of the proband's terms, grouped by the exact set of genes that overlap them.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProbandSegment {
+    /// Indices into `rows` of the overlapping genes, ascending. Empty for terms that no gene
+    /// overlaps.
+    pub row_indices: Vec<usize>,
+    /// Number of proband terms whose overlapping genes are exactly `row_indices`.
+    pub n_terms: usize,
+}
+
+
+
 /// Term closures of the proband and of every gene: the input to [`plot_data`].
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -97,6 +110,12 @@ pub struct UpsetPlotData {
     /// 40 units high with a highlight of 4. For A+B, the annotations common to both genes
     /// (see [`UpsetColumnData::n_annotated_terms`]) set the height.
     pub columns: Vec<UpsetColumnData>,
+    /// The proband's terms partitioned by exactly which genes overlap them, for the bar
+    /// beneath the plot. The counts sum to `summary.n_proband_terms`. The first segment is
+    /// always the terms no gene explains (empty `row_indices`); the rest are ordered by the
+    /// number of genes, then by `row_indices`. With at most four genes every combination is
+    /// listed, even with a count of zero; with more genes only combinations that occur are.
+    pub proband_breakdown: Vec<ProbandSegment>,
 
     pub summary: UpsetSummary,
 }
