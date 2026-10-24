@@ -449,8 +449,8 @@ impl PhenoblendSingleton {
             })
             .collect();
      //   let upset = crate::blend::upset_plot::build_upset_data(entities, &observed, hpo.as_ref())?;
-        let upset_input = crate::blend::upset_plot::plot_input(entities, &observed, &hpo);
-        let upset = crate::blend::upset_plot::plot_data(&upset_input);
+        let upset_input = crate::blend::upset_plot::plot_input(entities, &observed, hpo.as_ref());
+        let upset = crate::blend::upset_plot::plot_data(&upset_input)?;
         let mut genotypes: Vec<String> = entities.iter().map(|g| g.gene_symbol.clone()).collect();
         genotypes.sort();
         genotypes.dedup();
@@ -470,8 +470,6 @@ impl PhenoblendSingleton {
         &mut self,
         gda_list: HashMap<String, Vec<GeneDiseaseAssociation>>,
     ) -> Result<Notebook, String> {
-        let hpo = self.get_hpo().ok_or("Could not retrieve HPO".to_string())?;
-       // self.calculate_disease_counts(hpo.as_ref())?;
         let entities = crate::blend::overlap_payload::build_entity_list(&gda_list)?;
         let analysis = self.run_analysis(&entities)?;   // may fail: nothing changed yet
         let nb = self.notebook_mut()?;

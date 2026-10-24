@@ -1,0 +1,262 @@
+<details class="viz-details" open>
+      <summary>How to read this plot, and the data behind it</summary>
+
+      <div class="actions">
+        <button type="button" (click)="exportRequested.emit('json')">Download details (JSON)</button>
+        <button type="button" (click)="exportRequested.emit('html')">Download details (HTML)</button>
+      </div>
+
+      @switch (view()) {
+        @case ('overlap') {
+          @if (overlap(); as ov) {
+            <p>
+              Each row is an HPO term observed in the individual
+              ({{ ov.rows.length }} terms). Each column is a gene; all diseases associated with
+              the gene are pooled. A cell shows how the gene’s disease annotations relate to the
+              term:
+            </p>
+            <dl class="definitions">
+              @for (h of matchTypeHelp; track h.type) {
+                <dt>{{ h.type }}</dt>
+                <dd>{{ h.text }}</dd>
+              }
+            </dl>
+
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>Gene</th>
+                  <th>Terms matched (exact or descendant)</th>
+                  <th>Terms partially matched</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (gene of ov.entities; track gene; let i = $index) {
+                  <tr>
+                    <td>
+                      <strong>{{ gene }}</strong>
+                    </td>
+                    <td>{{ ov.nMatchedTerms[i] }} of {{ ov.rows.length }}</td>
+                    <td>{{ ov.nPartiallyMatchedTerms[i] }} of {{ ov.rows.length }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+
+            <details>
+              <summary>Every term and its match per gene</summary>
+              <table class="details-table">
+                <thead>
+                  <tr>
+                    <th>Observed term</th>
+                    @for (gene of ov.entities; track gene) {
+                      <th>{{ gene }}</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of ov.rows; track row.term.termId) {
+                    <tr>
+                      <td>
+                        <code>{{ row.term.termId }}</code> {{ row.term.termLabel }}
+                      </td>
+                      @for (gene of ov.entities; track gene) {
+                        @let m = row.matches[gene];
+                        <td>{{ describeMatch(m) }}</td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </details>
+          } @else {
+            <p>No overlap data available yet.</p>
+          }
+        }
+
+        @case ('upset') {
+             @if (upset(); as up) {
+                 @let n = up.summary.nProbandTerms;
+            <h4>Left bars: the individual’s terms per gene</h4>
+            <p>
+              Every bar is as long as the number of distinct observed terms ({{ n }}). The green part
+              is how many of them the gene accounts for: the term is annotated to the gene, or is a
+              descendant of an annotated term.
+            </p>
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>Gene</th>
+                  <th>Observed terms accounted for</th>
+                  <th>Observed terms not accounted for</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of up.rows; track row.geneSymbol) {
+                  <tr>
+                    <td>
+                      <strong>{{ row.geneSymbol }}</strong>
+                    </td>
+                    <td>
+                      {{ row.nOverlappingTerms }} of {{ row.nProbandTerms }}
+                      <ul class="term-list">
+                        @for (m of row.overlappingTerms; track m.term.termId) {
+                          <li>
+                            <code>{{ m.term.termId }}</code> {{ m.term.termLabel }}
+                            <small>
+                              (via
+                              @for (a of m.annotatedBy; track a.termId; let last = $last) {
+                                <code>{{ a.termId }}</code> {{ a.termLabel }}{{ last ? '' : ', ' }}
+                              }
+                              )
+                            </small>
+                          </li>
+                        }
+                      </ul>
+                    </td>
+                    <td>
+                      <ul class="term-list">
+                        @for (t of row.nonOverlappingTerms; track t.termId) {
+                          <li>
+                            <code>{{ t.termId }}</code> {{ t.termLabel }}
+                          </li>
+                        } @empty {
+                          <li class="empty">none</li>
+                        }
+                      </ul>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+
+  <!--         
+           
+            
+            <h4>Top bars: disease terms per gene or combination of genes</h4>
+            <p>
+              A bar’s height is the number of disease terms shared by all genes of the column. A
+              term counts when each gene is annotated with it or with a more specific term, and at
+              least one gene is annotated with it explicitly; the more general term stands for a
+              shared annotation. The green part is how many of those terms the individual matches:
+              the term is an observed term or an ancestor of one. Each shared term is counted once,
+              however many observed terms fall under it. Combinations are inclusive, so the A+B
+              column also counts terms that a third gene has.
+            </p>
+            @for (col of up.columns; track $index) {
+              <details>
+                <summary>
+                  {{ genesOf(col.rowIndices, up) }}: {{ col.nOverlappingTerms }} of
+                  {{ col.nAnnotatedTerms }} terms matched
+                </summary>
+                <h5>Matched</h5>
+                <ul class="term-list">
+                  @for (m of col.matchedTerms; track m.term.termId) {
+                    <li>
+                      <code>{{ m.term.termId }}</code> {{ m.term.termLabel }}
+                      <small>
+                        (observed:
+                        @for (o of m.matchedBy; track o.termId; let last = $last) {
+                          <code>{{ o.termId }}</code>{{ last ? '' : ', ' }}
+                        }
+                        )
+                      </small>
+                    </li>
+                  } @empty {
+                    <li class="empty">none</li>
+                  }
+                </ul>
+                <h5>Not matched</h5>
+                <ul class="term-list">
+                  @for (t of col.unmatchedTerms; track t.termId) {
+                    <li>
+                      <code>{{ t.termId }}</code> {{ t.termLabel }}
+                    </li>
+                  } @empty {
+                    <li class="empty">none</li>
+                  }
+                </ul>
+              </details>
+            }
+
+            <h4>Bottom bar: the individual’s terms by the genes that account for them</h4>
+            <p>
+              Each observed term is placed in exactly one segment, according to the exact set of genes
+              that account for it. “Not explained” terms are accounted for by none of the genes.
+            </p>
+            @for (seg of up.probandBreakdown; track $index) {
+              <details>
+                <summary>
+                  {{ segmentLabel(seg.rowIndices, up) }}: {{ seg.nTerms }}
+                  ({{ n > 0 ? seg.nTerms / n : 0 | percent: '1.1-1' }})
+                </summary>
+                <ul class="term-list">
+                  @for (t of seg.terms; track t.termId) {
+                    <li>
+                      <code>{{ t.termId }}</code> {{ t.termLabel }}
+                    </li>
+                  } @empty {
+                    <li class="empty">none</li>
+                  }
+                </ul>
+              </details>
+            -->
+
+          } @else {
+            <p>No upset data available yet.</p>
+          } 
+        }
+        @case ('spread') {
+            <p> Spread </p>
+            <!--
+          @if (spread(); as sp) {
+            <p>
+              Observed terms and the terms of each gene, grouped by organ system
+              ({{ sp.nPpktTerms }} observed terms).
+            </p>
+            @for (cat of sp.categories; track cat.id) {
+              <details>
+                <summary>
+                  {{ cat.name }}: {{ cat.ppktValue | percent: '1.0-0' }} of observed terms
+                  ({{ cat.ppktTerms?.length ?? 0 }} of {{ sp.nPpktTerms }})
+                </summary>
+                <h5>Individual</h5>
+                <ul class="term-list">
+                  @for (t of cat.ppktTerms ?? []; track t.termId) {
+                    <li>
+                      <code>{{ t.termId }}</code> {{ t.termLabel }}
+                    </li>
+                  }
+                </ul>
+                @for (s of cat.geneTerms ?? []; track s.series; let i = $index) {
+                  <h5>
+                    {{ s.series }}: {{ s.terms.length }} of {{ sp.seriesSummaries?.[i]?.nTerms ?? 0 }} terms
+                  </h5>
+                  <ul class="term-list">
+                    @for (t of s.terms; track t.termId) {
+                      <li>
+                        <code>{{ t.termId }}</code> {{ t.termLabel }}
+                      </li>
+                    } @empty {
+                      <li class="empty">none</li>
+                    }
+                  </ul>
+                }
+              </details>
+            }
+            @if (sp.ppktUncategorized?.length) {
+              <h4>Observed terms in no organ system</h4>
+              <ul class="term-list">
+                @for (t of sp.ppktUncategorized; track t.termId) {
+                  <li>
+                    <code>{{ t.termId }}</code> {{ t.termLabel }}
+                  </li>
+                }
+              </ul>
+            }
+          } @else {
+            <p>No spread data available yet.</p>
+          } -->
+        } 
+      }
+    </details>

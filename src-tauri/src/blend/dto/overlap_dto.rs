@@ -46,7 +46,8 @@ pub struct GeneMatch {
     pub score: f64,
     /// The single term responsible for the match: the identical disease term for `Exact`;
     /// the closest matching descendant for `Descendant` (ties broken by term ID);
-    /// the best shared term for `Partial`; `HP:0000118` for `None`.
+    /// the best shared term for `Partial`; `HP:0000118` for `None` (i.e., if there is no specific match, take the term id for 
+    /// the root Phenotypic abnormality, HP:0000118).
     pub matched_term: SimpleOntologyTerm,
 }
 
@@ -186,8 +187,7 @@ impl OverlapPlotItem {
         let label = match term {
             Some(t) => t.name().to_string(),
             None => "n/a".to_string() // should never happen
-        };
-        println!("OverlapPlotItem::new {}-{}", label, hpo_id);
+        }; 
         Self {
             hpo_id: hpo_id.to_string(),
             hpo_name: label,
@@ -226,14 +226,14 @@ impl OverlapPlotPayload {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OverlapData {
-     /// Ordered array of gene symbols or diseases following column sorting block rules
+     /// Ordered array of gene symbols following column sorting block rules (the genes represent one or more diseases associated with the gene)
     pub entities: Vec<String>,
     /// Ordered rows following phenotype grouping tiers
     pub rows: Vec<TermMatches>,
      /// `n_matched_terms[i]` is the number of rows (proband terms) that have a
     /// match for `entities[i]`. Same length and order as `entities`.
     pub n_matched_terms: Vec<usize>,
-     /// `n_matched_terms[i]` is the number of rows (proband terms) that have a
+    /// `n_partially_matched_terms[i]` is the number of rows (proband terms) that have a
     /// partial match for `entities[i]`.
     pub n_partially_matched_terms: Vec<usize>
 }
@@ -291,13 +291,256 @@ impl OverlapData {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::{fixture, rstest};
+    use serde_json::json;
+
+    fn term(id: &str, label: &str) -> SimpleOntologyTerm {
+        SimpleOntologyTerm::new(id, label).unwrap()
+    }
+
+    /// The root term is the only one for which a partial match becomes `NoMatch`.
+    fn root() -> SimpleOntologyTerm {
+        term(ROOT_PHENOTYPE_ID, "Phenotypic abnormality")
+    }
+
+    /// One observed term with one match per `(gene, match)` pair.
+    fn row(term: SimpleOntologyTerm, matches: &[(&str, &GeneMatch)]) -> TermMatches {
+        let mut tm = TermMatches::new(term);
+        for (gene, m) in matches {
+            tm.insert(gene, (*m).clone());
+        }
+        tm
+    }
+
+    fn genes(names: &[&str]) -> Vec<String> {
+        names.iter().map(|g| g.to_string()).collect()
+    }
+
+    /// A match of the requested type, so a case can say what it means and not how it is built.
+    fn match_of(match_type: MatchType) -> GeneMatch {
+        let m = match match_type {
+            MatchType::Exact => GeneMatch::exact(term("HP:0002650", "Scoliosis")),
+            MatchType::Descendant => GeneMatch::descendant(term("HP:0002650", "Scoliosis")),
+            MatchType::Partial => GeneMatch::partial(0.5, term("HP:0000316", "Hypertelorism")).unwrap(),
+            MatchType::NoMatch => GeneMatch::partial(0.0, root()).unwrap(),
+        };
+        assert_eq!(m.match_type, match_type, "test setup built the wrong match type");
+        m
+    }
+
+    /// Invariants that must hold for every `OverlapData`, whatever its contents.
+    fn assert_consistent(od: &OverlapData) {
+        assert_eq!(od.n_matched_terms.len(), od.entities.len());
+        assert_eq!(od.n_partially_matched_terms.len(), od.entities.len());
+        for (i, entity) in od.entities.iter().enumerate() {
+            // A term cannot be both a match and a partial match for the same gene.
+            assert!(od.n_matched_terms[i] + od.n_partially_matched_terms[i] <= od.rows.len(),
+                "{entity}: more matches than rows");
+        }
+        assert!(od.entities.windows(2).all(|w| w[0] < w[1]), "entities must be sorted and unique");
+    }
+
+    // ---------------------------------------------------------------------------------
+    // Shared data. Each gene gets a different pattern, so a bug that swapped the genes
+    // (or mixed up the two counters) cannot pass by accident.
+    //
+    //                   NF1          PTPN11
+    //   scoliosis       exact        exact
+    //   cleft palate    descendant   exact
+    //   hypertelorism   partial      descendant
+    //   macrocephaly    partial      (no entry)
+    //
+    //   => NF1: 2 matched, 2 partial      PTPN11: 3 matched, 0 partial
+    // ---------------------------------------------------------------------------------
+
+    #[fixture]
+    fn four_term_matches() -> Vec<TermMatches> {
+        let scoliosis = term("HP:0002650", "Scoliosis");
+        let palate = term("HP:0000175", "Cleft palate");
+        let hypertelorism = term("HP:0000316", "Hypertelorism");
+        let macrocephaly = term("HP:0000256", "Macrocephaly");
+        vec![
+            row(scoliosis.clone(), &[
+                ("NF1", &GeneMatch::exact(scoliosis.clone())),
+                ("PTPN11", &GeneMatch::exact(scoliosis)),
+            ]),
+            row(palate.clone(), &[
+                ("NF1", &GeneMatch::descendant(palate.clone())),
+                ("PTPN11", &GeneMatch::exact(palate)),
+            ]),
+            row(hypertelorism.clone(), &[
+                ("NF1", &GeneMatch::partial(0.25, hypertelorism.clone()).unwrap()),
+                ("PTPN11", &GeneMatch::descendant(hypertelorism)),
+            ]),
+            row(macrocephaly.clone(), &[
+                ("NF1", &GeneMatch::partial(0.5, macrocephaly).unwrap()),
+            ]),
+        ]
+    }
+
+    #[fixture]
+    fn overlap_data(four_term_matches: Vec<TermMatches>) -> OverlapData {
+        OverlapData::from_term_matches(genes(&["NF1", "PTPN11"]), &four_term_matches)
+    }
+
+    // ---------------------------------------------------------------------------------
+    // OverlapData::from_term_matches
+    // ---------------------------------------------------------------------------------
+
+    #[rstest]
+    fn counts_matches_and_partial_matches_per_gene(overlap_data: OverlapData) {
+        assert_eq!(overlap_data.entities, ["NF1", "PTPN11"]);
+        assert_eq!(overlap_data.n_matched_terms, [2, 3]);
+        assert_eq!(overlap_data.n_partially_matched_terms, [2, 0]);
+        assert_eq!(overlap_data.rows.len(), 4);
+        assert_consistent(&overlap_data);
+    }
+
+    /// One row, one gene, one match of each type: only the right counter moves.
+    #[rstest]
+    #[case(MatchType::Exact, 1, 0)]
+    #[case(MatchType::Descendant, 1, 0)]
+    #[case(MatchType::Partial, 0, 1)]
+    #[case(MatchType::NoMatch, 0, 0)]
+    fn each_match_type_moves_the_right_counter(
+        #[case] match_type: MatchType,
+        #[case] expected_matched: usize,
+        #[case] expected_partial: usize,
+    ) {
+        let rows = [row(term("HP:0002650", "Scoliosis"), &[("NF1", &match_of(match_type))])];
+        let od = OverlapData::from_term_matches(genes(&["NF1"]), &rows);
+        assert_eq!(od.n_matched_terms, [expected_matched]);
+        assert_eq!(od.n_partially_matched_terms, [expected_partial]);
+        assert_consistent(&od);
+    }
+
+    #[rstest]
+    #[case(&["NF1", "PTPN11"], &["NF1", "PTPN11"])]
+    #[case(&["PTPN11", "NF1"], &["NF1", "PTPN11"])] // sorted
+    #[case(&["NF1", "PTPN11", "NF1"], &["NF1", "PTPN11"])] // de-duplicated
+    #[case(&[], &[])]
+    fn entities_are_sorted_and_unique(#[case] input: &[&str], #[case] expected: &[&str]) {
+        let od = OverlapData::from_term_matches(genes(input), &[]);
+        assert_eq!(od.entities, expected);
+        assert_consistent(&od);
+    }
+
+    #[test]
+    fn gene_missing_from_a_row_counts_as_unmatched() {
+        // PTPN11 is an entity, but this row has no entry for it.
+        let rows = [row(term("HP:0002650", "Scoliosis"),
+                        &[("NF1", &GeneMatch::exact(term("HP:0002650", "Scoliosis")))])];
+        let od = OverlapData::from_term_matches(genes(&["NF1", "PTPN11"]), &rows);
+        assert_eq!(od.n_matched_terms, [1, 0]);
+        assert_eq!(od.n_partially_matched_terms, [0, 0]);
+    }
+
+    #[test]
+    fn match_for_an_unlisted_gene_is_ignored() {
+        // The row mentions OTHER, which is not among the entities, so it must not be counted.
+        let rows = [row(term("HP:0002650", "Scoliosis"),
+                        &[("OTHER", &GeneMatch::exact(term("HP:0002650", "Scoliosis")))])];
+        let od = OverlapData::from_term_matches(genes(&["NF1"]), &rows);
+        assert_eq!(od.n_matched_terms, [0]);
+    }
+
+    #[test]
+    fn no_rows_gives_zero_counts() {
+        let od = OverlapData::from_term_matches(genes(&["NF1", "PTPN11"]), &[]);
+        assert_eq!(od.n_matched_terms, [0, 0]);
+        assert_eq!(od.n_partially_matched_terms, [0, 0]);
+        assert!(od.rows.is_empty());
+        assert_consistent(&od);
+    }
+
+    // ---------------------------------------------------------------------------------
+    // GeneMatch::partial: every rule of the constructor, as a table
+    // ---------------------------------------------------------------------------------
+
+    /// `expected` is the resulting type, or `None` when construction must fail.
+    #[rstest]
+    #[case(0.5, false, Some(MatchType::Partial))]
+    #[case(0.0, false, Some(MatchType::Partial))] // zero on a non-root term is still partial
+    #[case(1.0, false, Some(MatchType::Partial))] // upper bound is inclusive
+    #[case(0.0, true, Some(MatchType::NoMatch))] // only the root turns zero into NoMatch
+    #[case(0.3, true, None)] // root with a non-zero score contradicts itself
+    #[case(-0.1, false, None)]
+    #[case(1.1, false, None)]
+    #[case(f64::NAN, false, None)]
+    #[case(f64::INFINITY, false, None)]
+    fn partial_constructor_rules(
+        #[case] score: f64,
+        #[case] use_root: bool,
+        #[case] expected: Option<MatchType>,
+    ) {
+        let t = if use_root { root() } else { term("HP:0000316", "Hypertelorism") };
+        let result = GeneMatch::partial(score, t);
+        assert_eq!(result.as_ref().ok().map(|m| m.match_type), expected, "{result:?}");
+    }
+
+    // ---------------------------------------------------------------------------------
+    // Frontend contract: key names and value shapes the Angular code depends on
+    // ---------------------------------------------------------------------------------
+
+    #[rstest]
+    fn overlap_data_json_keys(overlap_data: OverlapData) {
+        let v = serde_json::to_value(&overlap_data).unwrap();
+        let mut keys: Vec<&str> = v.as_object().unwrap().keys().map(String::as_str).collect();
+        keys.sort_unstable();
+        assert_eq!(keys, ["entities", "nMatchedTerms", "nPartiallyMatchedTerms", "rows"]);
+        assert_eq!(v["nMatchedTerms"], json!([2, 3]));
+    }
+
+    #[test]
+    fn gene_match_json_shape() {
+        let m = GeneMatch::exact(term("HP:0002650", "Scoliosis"));
+        assert_eq!(
+            serde_json::to_value(&m).unwrap(),
+            json!({
+                "matchType": "exact",
+                "score": 1.0,
+                "matchedTerm": { "termId": "HP:0002650", "termLabel": "Scoliosis" }
+            })
+        );
+    }
+
+    // ---------------------------------------------------------------------------------
+    // Payload for the overlap graphic
+    // ---------------------------------------------------------------------------------
+
+    #[rstest]
+    fn payload_keeps_row_order_and_scores(overlap_data: OverlapData) {
+        let payload = overlap_data.to_payload();
+        let ids: Vec<&str> = payload.columns.iter().map(|c| c.hpo_id.as_str()).collect();
+        assert_eq!(ids, ["HP:0002650", "HP:0000175", "HP:0000316", "HP:0000256"]);
+        assert_eq!(payload.n_columns(), 4);
+        assert_eq!(payload.entities, overlap_data.entities);
+        let hypertelorism = &payload.columns[2];
+        assert_eq!(hypertelorism.scores["NF1"], 0.25);
+        assert_eq!(hypertelorism.scores["PTPN11"], 1.0);
+        assert!(!payload.columns[3].scores.contains_key("PTPN11")); // absent, not zero
+    }
+
+    // ---------------------------------------------------------------------------------
+    // Severity
+    // ---------------------------------------------------------------------------------
 
     #[test]
     fn with_severity_sets_and_clears() {
-        let term = SimpleOntologyTerm::new("HP:0001639", "Hypertrophic cardiomyopathy").unwrap();
-        let tm = TermMatches::new(term).with_severity(Some(Severity::Severe));
+        let tm = TermMatches::new(term("HP:0001639", "Hypertrophic cardiomyopathy"))
+            .with_severity(Some(Severity::Severe));
         assert_eq!(tm.severity, Some(Severity::Severe));
         assert_eq!(tm.with_severity(None).severity, None);
     }
 
+    #[rstest]
+    #[case("HP:0012827", Some(Severity::Borderline))]
+    #[case("HP:0012825", Some(Severity::Mild))]
+    #[case("HP:0012826", Some(Severity::Moderate))]
+    #[case("HP:0012828", Some(Severity::Severe))]
+    #[case("HP:0012829", Some(Severity::Profound))]
+    #[case("HP:0000001", None)]
+    fn severity_from_hpo_id(#[case] id: &str, #[case] expected: Option<Severity>) {
+        assert_eq!(Severity::from_hpo_id(id), expected);
+    }
 }

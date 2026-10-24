@@ -5,6 +5,7 @@ import { FenominalSentence, HierarchyMapItem, OntologyMatch, HpoTermMinimal } fr
 import { InitializationStatusDto } from '../models/status_dto'; 
 import { DuoEnrichmentSummary, GeneDiseaseAnnotations, GeneDiseaseAssociation, ObservedHpoInput } from '../models/interfaces';
 import { OverlapPlotPayload, SpreadPlotPayload , UpsetPlotData} from 'ngx-phenoprofile';
+import { Notebook } from '../models/notebook';
 
 
 @Injectable({
@@ -119,8 +120,8 @@ export class ConfigService {
     });
   }
 
-  async initializeNotebook(byGene: Map<string, GeneDiseaseAssociation[]>): Promise<void> {
-      return invoke<void>('initialize_notebook', {gdaList: Object.fromEntries(byGene) })
+  async initializeNotebook(byGene: Map<string, GeneDiseaseAssociation[]>): Promise<Notebook> {
+      return invoke<Notebook>('initialize_notebook', {gdaList: Object.fromEntries(byGene) })
   }
  
   

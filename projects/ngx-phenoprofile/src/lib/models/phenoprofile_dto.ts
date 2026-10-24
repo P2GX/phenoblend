@@ -26,7 +26,22 @@ export interface UpsetPlotPayload {
 
 
 
-export interface UpsetRowData { geneSymbol: string; nProbandTerms: number; nOverlappingTerms: number; }
+export interface UpsetRowData { 
+  geneSymbol: string; 
+  nProbandTerms: number; 
+  nOverlappingTerms: number; 
+}
+
+
+export interface SimpleOntologyTerm { termId: string; termLabel: string; }
+export interface ProbandTermMatch { term: SimpleOntologyTerm; annotatedBy: SimpleOntologyTerm[]; }
+export interface MatchedTerm { term: SimpleOntologyTerm; matchedBy: SimpleOntologyTerm[]; }
+
+export interface UpsetRowData {
+  geneSymbol: string; nProbandTerms: number; nOverlappingTerms: number;
+  overlappingTerms: ProbandTermMatch[]; nonOverlappingTerms: SimpleOntologyTerm[];
+}
+
 export interface UpsetColumnData { rowIndices: number[]; nAnnotatedTerms: number; nOverlappingTerms: number; }
 export interface ProbandSegment { rowIndices: number[]; nTerms: number; }
 

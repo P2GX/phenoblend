@@ -20,7 +20,10 @@ import {
   UpsetPlotData,
   UpsetPlotPayload
 } from 'ngx-phenoprofile';
-import { toLegacyPayload } from '../models/notebook';
+import { toLegacyPayload , Notebook} from '../models/notebook';
+import { DetailsExportFormat, VizDetailsComponent } from '../vizdetails/vizdetails.component';
+
+
 
 //  3 view modes
 type VisualizationType = 'overlap' | 'upset' | 'spread';
@@ -29,7 +32,7 @@ type ExportFormat = 'svg' | 'pdf';
 @Component({
   selector: 'app-presence-visualizer',
   standalone: true,
-  imports: [OverlapPlotComponent, UpsetPlotComponent, SpreadPlotComponent],
+  imports: [OverlapPlotComponent, UpsetPlotComponent, SpreadPlotComponent, VizDetailsComponent],
   templateUrl: './visualize.component.html',
   styleUrls: ['./visualize.component.scss'],
 })
@@ -48,6 +51,8 @@ export class PhenotypeProfileVisualizerComponent implements OnInit {
   readonly spreadData = signal<SpreadPlotPayload | null>(null);
   readonly isLoading = signal<boolean>(false);
   readonly activeView = signal<VisualizationType>('overlap');
+
+  readonly notebook = signal<Notebook | null>(null);
 
   enrichmentResults = signal<DuoEnrichmentSummary[] | null>(null);
   isEnrichmentLoading = signal(false);
@@ -98,7 +103,8 @@ export class PhenotypeProfileVisualizerComponent implements OnInit {
       }, new Map<string, GeneDiseaseAssociation[]>());
  
       console.log("visualize")
-      await this.configService.initializeNotebook(annotationMap);
+      const nb = await this.configService.initializeNotebook(annotationMap);
+      this.notebook.set(nb);
       const overlapResult =
         await this.configService.getOverlapPlotData();
       const upsetPlotData =
@@ -181,6 +187,32 @@ export class PhenotypeProfileVisualizerComponent implements OnInit {
       this.notificationService.showError(
         `Failed to export as ${format.toUpperCase()}.`,
       );
+    }
+  }
+
+  async exportDetails(format: DetailsExportFormat): Promise<void> {
+    const nb = this.notebook();
+    if (!nb) return;
+    const view = this.activeView();
+    const dateStamp = new Date().toISOString().split('T')[0];
+    const stem = `${this.annotationService.defaultFileName(view)}_details_${dateStamp}`;
+    try {
+      if (format === 'json') {
+        const text = JSON.stringify(
+          { view, observedHpo: nb.observedHpo, analysis: nb.analysis },
+          null,
+          2,
+        );
+      //  const saved = await this.configService.saveTextFile(text, `${stem}.json`); // new, see below
+       // if (saved) this.notificationService.showSuccess('Details exported successfully.');
+        console.log("TODO save details");
+        this.notificationService.showWarning("Need to implement save");
+      } else {
+        this.notificationService.showError('HTML export is not implemented yet.');
+      }
+    } catch (error) {
+      console.error('Details export failed:', error);
+      this.notificationService.showError('Failed to export details.');
     }
   }
 

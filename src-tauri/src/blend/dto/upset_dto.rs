@@ -49,6 +49,8 @@ pub struct ProbandSegment {
     pub row_indices: Vec<usize>,
     /// Number of proband terms whose overlapping genes are exactly `row_indices`.
     pub n_terms: usize,
+    /// The proband terms, sorted by term id
+    pub terms: Vec<SimpleOntologyTerm>,
 }
 
 
@@ -62,6 +64,9 @@ pub struct UpsetPlotInput {
     pub proband_closures: BTreeMap<TermKey, BTreeSet<TermKey>>,
     /// Key: gene symbol; value: HPO annotations of all diseases associated with the gene.
     pub gene_annotations: BTreeMap<GeneKey, GeneTerms>,
+    /// Display data for every observed and every annotated term. Ancestors that are neither
+    /// are never shown, so they are not included.
+    pub terms: BTreeMap<TermKey, SimpleOntologyTerm>,
 }
 
 
@@ -75,10 +80,10 @@ pub struct UpsetPlotInput {
 pub struct MatchedTerm {
     /// The disease's own (explicit) annotation, as shown in the bar.
     pub term: SimpleOntologyTerm,
-    /// The proband term that accounts for it: the same term if the proband has it, otherwise
-    /// a descendant of it (the smallest term ID if there are several). Observed terms are
-    /// non-redundant, so an exact match is never listed together with descendants.
-    pub matched_by: SimpleOntologyTerm,
+    /// Observed proband terms equal to `term` or one of its descendants. Never empty.
+    /// If the disease has “Seizure” and the individual has “Focal seizure” and “Tonic seizure”, 
+    /// both are observed and both fall under the one disease term.
+    pub matched_by: Vec<SimpleOntologyTerm>,
 }
 
 
@@ -120,6 +125,18 @@ pub struct UpsetPlotData {
     pub summary: UpsetSummary,
 }
 
+
+
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProbandTermMatch {
+    pub term: SimpleOntologyTerm,
+    /// Gene annotations equal to `term` or one of its ancestors. Never empty.
+    pub annotated_by: Vec<SimpleOntologyTerm>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpsetRowData {
@@ -135,6 +152,8 @@ pub struct UpsetRowData {
     /// Formally, the number of proband terms `p` with
     /// `gene.annotated ∩ proband_closures[p] ≠ ∅`.
     pub n_overlapping_terms: usize,
+    pub overlapping_terms: Vec<ProbandTermMatch>,
+    pub non_overlapping_terms: Vec<SimpleOntologyTerm>,
 }
 
 /// One column of the pheno-upset plot: the phenotypic profile of one gene (e.g. NF1) or of a
@@ -155,6 +174,10 @@ pub struct UpsetColumnData {
     /// equal or are an ancestor of an observed proband term. Each shared term counts once,
     /// however many proband terms fall under it, so this never exceeds `n_annotated_terms`.
     pub n_overlapping_terms: usize,
+     /// Shared terms the proband matches, each with the observed terms that match it.
+    pub matched_terms: Vec<MatchedTerm>,
+    /// Shared terms the proband does not match.
+    pub unmatched_terms: Vec<SimpleOntologyTerm>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

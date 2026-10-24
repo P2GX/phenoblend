@@ -46,16 +46,19 @@
           }
         }
 
+        @if (notebook(); as nb) {
+        <app-viz-details
+          [view]="activeView()"
+          [notebook]="nb"
+          (exportRequested)="exportDetails($event)" />
+      }
+
       } @else {
         <div class="empty-state">
           <p>No active case data loaded to visualize.</p>
         </div>
       }
-       <div class="workspace-status-bar">
-    <span class="status-icon">ℹ️</span>
-    <span> {{ annotationService.workspaceSummaryText() }}</span>
-
-  </div>
+       
   
 
   @if (isEnrichmentLoading()) {
