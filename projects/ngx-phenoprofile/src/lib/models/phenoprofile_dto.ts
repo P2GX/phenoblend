@@ -42,8 +42,19 @@ export interface UpsetRowData {
   overlappingTerms: ProbandTermMatch[]; nonOverlappingTerms: SimpleOntologyTerm[];
 }
 
-export interface UpsetColumnData { rowIndices: number[]; nAnnotatedTerms: number; nOverlappingTerms: number; }
-export interface ProbandSegment { rowIndices: number[]; nTerms: number; }
+export interface UpsetColumnData { 
+  rowIndices: number[]; 
+  nAnnotatedTerms: number; 
+  nOverlappingTerms: number; 
+  matchedTerms: MatchedTerm[];
+  unmatchedTerms: SimpleOntologyTerm[];
+}
+
+export interface ProbandSegment { 
+  rowIndices: number[]; 
+  nTerms: number; 
+  terms: SimpleOntologyTerm[];
+}
 
 export interface UpsetSummary {
   nProbandTerms: number; nProbandExplained: number; nProbandUnexplained: number;

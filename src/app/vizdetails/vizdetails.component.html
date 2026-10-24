@@ -129,86 +129,98 @@
                 }
               </tbody>
             </table>
+           <h4>Top bars: disease terms per gene or combination of genes</h4>
+<p>
+  Each column is one gene or a combination of two to four genes (the filled dots). Its height
+  is the number of <em>shared disease terms</em>: HPO terms that every gene of the column is
+  annotated with, directly or through a more specific term, and that at least one of those
+  genes is annotated with explicitly. When the genes use terms at different levels (A has
+  “Focal seizure”, B has “Seizure”), the more general term stands for the shared annotation and
+  is counted once. Ancestors that no gene annotates are not counted.
+</p>
+<p>
+  The green part is how many of the shared terms the individual matches: the term is one of the
+  individual’s observed terms or an ancestor of one. A gene annotated with “Seizure” matches an
+  individual with “Focal seizure”, but not the other way around. Each shared term is counted
+  once, however many observed terms fall under it.
+</p>
+<p>
+  Combinations are inclusive: the A+B column also counts terms that a third gene has.
+  Single-gene columns are always shown. A combination is shown only if each of its genes matches
+  at least one observed term and the combination itself has a match. Columns are ordered by the
+  green count, then by height.
+</p>
+<p>
+  These bars count disease terms, whereas the left bars count the individual’s terms, so the
+  numbers can differ: several observed terms may fall under a single disease term.
+</p>
+@for (col of up.columns; track $index) {
+  <details>
+    <summary>
+      {{ genesOf(col.rowIndices, up) }}: {{ col.nOverlappingTerms }} of
+      {{ col.nAnnotatedTerms }} terms matched
+    </summary>
+    <h5>Matched</h5>
+    <ul class="term-list">
+      @for (m of col.matchedTerms; track m.term.termId) {
+        <li>
+          <code>{{ m.term.termId }}</code> {{ m.term.termLabel }}
+          <small>
+            (observed:
+            @for (o of m.matchedBy; track o.termId; let last = $last) {
+              <code>{{ o.termId }}</code> {{ o.termLabel }}{{ last ? '' : ', ' }}
+            })
+          </small>
+        </li>
+      } @empty {
+        <li class="empty">none</li>
+      }
+    </ul>
+    <h5>Not matched</h5>
+    <ul class="term-list">
+      @for (t of col.unmatchedTerms; track t.termId) {
+        <li>
+          <code>{{ t.termId }}</code> {{ t.termLabel }}
+        </li>
+      } @empty {
+        <li class="empty">none</li>
+      }
+    </ul>
+  </details>
+}
 
-  <!--         
-           
-            
-            <h4>Top bars: disease terms per gene or combination of genes</h4>
-            <p>
-              A bar’s height is the number of disease terms shared by all genes of the column. A
-              term counts when each gene is annotated with it or with a more specific term, and at
-              least one gene is annotated with it explicitly; the more general term stands for a
-              shared annotation. The green part is how many of those terms the individual matches:
-              the term is an observed term or an ancestor of one. Each shared term is counted once,
-              however many observed terms fall under it. Combinations are inclusive, so the A+B
-              column also counts terms that a third gene has.
-            </p>
-            @for (col of up.columns; track $index) {
-              <details>
-                <summary>
-                  {{ genesOf(col.rowIndices, up) }}: {{ col.nOverlappingTerms }} of
-                  {{ col.nAnnotatedTerms }} terms matched
-                </summary>
-                <h5>Matched</h5>
-                <ul class="term-list">
-                  @for (m of col.matchedTerms; track m.term.termId) {
-                    <li>
-                      <code>{{ m.term.termId }}</code> {{ m.term.termLabel }}
-                      <small>
-                        (observed:
-                        @for (o of m.matchedBy; track o.termId; let last = $last) {
-                          <code>{{ o.termId }}</code>{{ last ? '' : ', ' }}
-                        }
-                        )
-                      </small>
-                    </li>
-                  } @empty {
-                    <li class="empty">none</li>
-                  }
-                </ul>
-                <h5>Not matched</h5>
-                <ul class="term-list">
-                  @for (t of col.unmatchedTerms; track t.termId) {
-                    <li>
-                      <code>{{ t.termId }}</code> {{ t.termLabel }}
-                    </li>
-                  } @empty {
-                    <li class="empty">none</li>
-                  }
-                </ul>
-              </details>
-            }
-
-            <h4>Bottom bar: the individual’s terms by the genes that account for them</h4>
-            <p>
-              Each observed term is placed in exactly one segment, according to the exact set of genes
-              that account for it. “Not explained” terms are accounted for by none of the genes.
-            </p>
-            @for (seg of up.probandBreakdown; track $index) {
-              <details>
-                <summary>
-                  {{ segmentLabel(seg.rowIndices, up) }}: {{ seg.nTerms }}
-                  ({{ n > 0 ? seg.nTerms / n : 0 | percent: '1.1-1' }})
-                </summary>
-                <ul class="term-list">
-                  @for (t of seg.terms; track t.termId) {
-                    <li>
-                      <code>{{ t.termId }}</code> {{ t.termLabel }}
-                    </li>
-                  } @empty {
-                    <li class="empty">none</li>
-                  }
-                </ul>
-              </details>
-            -->
-
-          } @else {
-            <p>No upset data available yet.</p>
-          } 
-        }
+<h4>Bottom bar: the individual’s terms by the genes that account for them</h4>
+<p>
+  A gene accounts for an observed term if the gene is annotated with that term or with a more
+  general one. Each observed term is placed in exactly one segment, determined by the exact set
+  of genes that account for it, so the segments add up to the {{ n }} observed terms.
+  “Not explained” holds the terms that none of the genes accounts for. Segments with no terms
+  are not drawn but are listed here. With more than four genes, only the combinations that
+  occur are listed.
+</p>
+@for (seg of up.probandBreakdown; track $index) {
+  <details>
+    <summary>
+      {{ segmentLabel(seg.rowIndices, up) }}: {{ seg.nTerms }}
+      ({{ (n > 0 ? seg.nTerms / n : 0) | percent: '1.1-1' }})
+    </summary>
+    <ul class="term-list">
+      @for (t of seg.terms; track t.termId) {
+        <li>
+          <code>{{ t.termId }}</code> {{ t.termLabel }}
+        </li>
+      } @empty {
+        <li class="empty">none</li>
+      }
+    </ul>
+  </details>
+}
+} @else {
+  <p>No upset data available yet.</p>
+}
+}
         @case ('spread') {
             <p> Spread </p>
-            <!--
           @if (spread(); as sp) {
             <p>
               Observed terms and the terms of each gene, grouped by organ system
@@ -256,7 +268,7 @@
             }
           } @else {
             <p>No spread data available yet.</p>
-          } -->
+          } 
         } 
       }
     </details>

@@ -1,6 +1,6 @@
 [package]
 name = "phenoblend"
-version = "0.4.15"
+version = "0.4.16"
 description = "Phenoblend"
 authors = ["Peter N Robinson"]
 edition = "2021"

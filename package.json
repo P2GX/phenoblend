@@ -1,6 +1,6 @@
 {
   "name": "phenoblend",
-  "version": "0.4.15",
+  "version": "0.4.16",
   "scripts": {
     "ng": "ng",
     "start": "nx serve phenoblend --port 1420",
