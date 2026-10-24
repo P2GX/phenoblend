@@ -1,4 +1,3 @@
-// presence-matrix.component.ts
 import { Component, ElementRef, Input, OnChanges, SimpleChanges, ViewChild, signal } from '@angular/core';
 import { DecimalPipe} from '@angular/common'
 import * as d3 from 'd3';
@@ -85,6 +84,26 @@ private readonly HEAVY = new Set<Severity>(['severe', 'profound']);
     }
   }
 
+  private static readonly LABEL_FONT = '500 11px sans-serif'; // must match the text style below
+  private static readonly LABEL_FONT_PX = 11;
+
+  /** The text that is drawn for a term; used both to draw and to measure. */
+  private labelText(name: string): string {
+    return name.length > 42 ? name.substring(0, 40) + '...' : name;
+  }
+
+  /** Room needed by labels rotated -45° that start at the top edge of a column. */
+  private rotatedLabelExtent(labels: string[]): { vertical: number; horizontal: number } {
+    const ctx = document.createElement('canvas').getContext('2d')!;
+    ctx.font = OverlapPlotComponent.LABEL_FONT;
+    const longest = Math.max(0, ...labels.map((t) => ctx.measureText(t).width));
+    const along = Math.ceil(longest * Math.SQRT1_2); // extent up and to the right
+    return {
+      vertical: along + Math.ceil(OverlapPlotComponent.LABEL_FONT_PX * Math.SQRT1_2) + 10,
+      horizontal: along,
+    };
+  }
+
   private renderMatrixChart(): void {
     // Clear out any stale layouts if rendering updates sequentially
     const container = this.chartContainerRef.nativeElement;
@@ -95,12 +114,16 @@ private readonly HEAVY = new Set<Severity>(['severe', 'profound']);
 
     // Configurable scaling step bounds (similar to your 0.5 inches space calculations)
     const cellSize = 30;
-    const margin = { top: 120, right: 180, bottom: 70, left: 180 };
-    const matrixWidth = cols.length * cellSize; // Width of just the matrix grid
+    const extent = this.rotatedLabelExtent(cols.map((c) => this.labelText(c.hpoName)));
+    const margin = {
+      top: Math.max(120, extent.vertical),
+      right: Math.max(180, extent.horizontal - cellSize / 2 + 10), // the last label slants to the right
+      bottom: 70,
+      left: 180,
+    };
+    const matrixWidth = cols.length * cellSize;
     const width = matrixWidth + margin.left + margin.right;
-    const height = (genes.length * cellSize) + margin.top + margin.bottom;
-   // const width = (cols.length * cellSize) + margin.left + margin.right;
-    //const height = (genes.length * cellSize) + margin.top + margin.bottom;
+    const height = genes.length * cellSize + margin.top + margin.bottom;
 
     // 1. Initialize the root SVG canvas viewport
     const svg = d3.select(container)
@@ -122,7 +145,7 @@ private readonly HEAVY = new Set<Severity>(['severe', 'profound']);
       .range([0, genes.length * cellSize])
       .padding(0.05);
 
-    // 3. Custom color interpolator matching your Matplotlib BoundaryNorm step layout
+    // 3. Custom color interpolator 
     const colorScale = (score: number): string => {
       if (score >= 1.0) return this.MATCH_COLOR;
       if (score <= 0.0) return this.MISMATCH_COLOR;

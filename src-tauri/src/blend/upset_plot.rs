@@ -20,59 +20,18 @@ use std::collections::{BTreeMap, BTreeSet};
 use ontolius::{TermId, ontology::{TaxonomyWalk, csr::FullCsrOntology}};
 use serde::{Deserialize, Serialize};
 
-use crate::{blend::{disease_gene_entity::{GeneDiseaseEntity, simple_term}, dto::{GeneKey, MatchedTerm, ProbandSegment, ProbandTermMatch, TermKey, UpsetColumnData, UpsetPlotData, UpsetRowData, UpsetSummary}}, model::simple_term::SimpleOntologyTerm};
+use crate::{blend::{disease_gene_entity::{GeneDiseaseEntity, simple_term}, dto::{GeneKey, GeneTerms, MatchedTerm, ProbandSegment, ProbandTermMatch, TermKey, UpsetColumnData, UpsetPlotData, UpsetPlotInput, UpsetRowData, UpsetSummary, closure_of}}, model::simple_term::SimpleOntologyTerm};
 
 
 /// Most genes combined in one column. Multiple genetic diagnoses with more than four genes
 /// are not expected, and the number of combinations grows quickly.
 const MAX_GENES_PER_COLUMN: usize = 4;
 
-/// Term closures of the proband and of every gene: the input to [`plot_data`].
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UpsetPlotInput {
-    /// Key: an HPO term observed in the proband; value: that term plus all of its ancestors.
-    /// Duplicate observed terms collapse into one entry.
-    pub proband_closures: BTreeMap<TermKey, BTreeSet<TermKey>>,
-    /// Key: gene symbol; value: HPO annotations of all diseases associated with the gene.
-    pub gene_annotations: BTreeMap<GeneKey, GeneTerms>,
-    /// Display data for every observed and every annotated term. Ancestors that are neither
-    /// are never shown, so they are not included.
-    pub terms: BTreeMap<TermKey, SimpleOntologyTerm>,
-}
 
-/// HPO annotations of one gene, pooled across all diseases associated with it.
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GeneTerms {
-    /// Terms directly annotated to the gene's disease(s).
-    pub annotated: BTreeSet<TermKey>,
-    /// `annotated` plus all ancestors (true-path closure); always a superset of `annotated`.
-    pub closure: BTreeSet<TermKey>,
-}
 
-impl GeneTerms {
-    /// Records `t` as annotated and adds it, with its ancestors, to the closure.
-    pub fn add_term(&mut self, hpo: &FullCsrOntology, t: &TermId) {
-        self.add_term_with_closure(t.to_string(), closure_of(hpo, t));
-    }
 
-    /// Ontology-free core of [`GeneTerms::add_term`].
-    fn add_term_with_closure(&mut self, term: TermKey, closure: BTreeSet<TermKey>) {
-        self.annotated.insert(term);
-        self.closure.extend(closure);
-    }
-}
 
-/// The true-path closure of `t`: `t` itself plus all of its ancestors.
-fn closure_of(hpo: &FullCsrOntology, t: &TermId) -> BTreeSet<TermKey> {
-    let mut closure: BTreeSet<TermKey> = hpo
-        .iter_term_and_ancestor_ids(t)
-        .map(|a| a.to_string())
-        .collect();
-    closure.insert(t.to_string()); // harmless if the iterator already includes the term
-    closure
-}
+
 
 /// Step 1: expands the proband's observed terms and the genes' annotations to closures.
 ///

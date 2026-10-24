@@ -33,11 +33,18 @@ pub fn closure_of(hpo: &FullCsrOntology, t: &TermId) -> BTreeSet<TermKey> {
 }
 
 impl GeneTerms {
+    /// Records `t` as annotated and adds it, with its ancestors, to the closure.
     pub fn add_term(&mut self, hpo: &FullCsrOntology, t: &TermId) {
-        self.annotated.insert(t.to_string());
-        self.closure.extend(closure_of(hpo, t));
+        self.add_term_with_closure(t.to_string(), closure_of(hpo, t));
+    }
+
+    /// Ontology-free core of [`GeneTerms::add_term`].
+    fn add_term_with_closure(&mut self, term: TermKey, closure: BTreeSet<TermKey>) {
+        self.annotated.insert(term);
+        self.closure.extend(closure);
     }
 }
+
 
 
 /// One part of the proband's terms, grouped by the exact set of genes that overlap them.
