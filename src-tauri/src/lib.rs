@@ -28,11 +28,13 @@ use ga4ghphetools::{pick_file_and_process, load_ontology, OntologyLoadEvent};
 use crate::blend::dto::ObservedHpoInput;
 use crate::blend::dto::UpsetPlotData;
 use crate::blend::dto::SpreadPlotPayload;
+pub use crate::blend::batch::write_batch;
 use crate::model::Notebook;
 use crate::{blend::dto::OverlapPlotPayload, phenoblend::PhenoblendSingleton};
 use crate::model::status::InitializationStatusDto;
 use crate::model::emit_notebook;
 use crate::hpoa::disease_model::GeneDiseaseAssociation;
+pub use crate::hpoa::hpoa_ingest::load_hpoa_d;
 use tauri_plugin_log::{Target, TargetKind};
 
 

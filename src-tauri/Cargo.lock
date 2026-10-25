@@ -3861,9 +3861,10 @@ dependencies = [
 
 [[package]]
 name = "phenoblend"
-version = "0.4.16"
+version = "0.4.17"
 dependencies = [
  "chrono",
+ "clap",
  "csv",
  "dirs 6.0.0",
  "fenominal",

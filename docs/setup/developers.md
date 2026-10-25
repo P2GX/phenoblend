@@ -124,3 +124,15 @@ npm run docs:dev
 ```
 
 Look for a link such as `http://localhost:5173/phenoblend/` in the shell and click on it. Corrections and suggestions for the documentation are also welcome as issues or pull requests.
+
+
+### Running the batch analysis
+
+
+```bash
+cd src-tauri
+cargo run --release --features cli --bin phenoblend-batch -- --phenopackets ../ppkts --hpo hp.json --hpoa phenotype.hpoa --out results.tsv --shuffle-seed 42
+```
+
+
+TODO: details

@@ -1,6 +1,6 @@
 [package]
 name = "phenoblend"
-version = "0.4.16"
+version = "0.4.17"
 description = "Phenoblend"
 authors = ["Peter N Robinson"]
 edition = "2021"
@@ -18,6 +18,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2.6.2", features = [] }
 
 [dependencies]
+clap = { version = "4", features = ["derive"], optional = true }
 dirs = "6.0"
 ontolius = "0.8.1" 
 reqwest = { version = "0.13.5", features = ["json", "blocking"] }
@@ -58,6 +59,13 @@ rfd = { version = "0.16.0", default-features = false, features = ["xdg-portal", 
 # rfd buggy with version 0.17.2: package `phenoboard` depends on `rfd` with feature `tokio` but `rfd` does not have that feature.
 
 
+[features]
+cli = ["dep:clap"]
+
+[[bin]]
+name = "phenoblend-batch"
+path = "bin/batch.rs"
+required-features = ["cli"]
 
 
 [profile.dev.package."*"]

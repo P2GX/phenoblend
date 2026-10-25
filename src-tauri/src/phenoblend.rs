@@ -67,59 +67,17 @@ impl PhenoblendSingleton {
         let _ = self.settings.set_g2d_path(g2d_path);
     }
 
+    
     /// Input a GA4GH Phenopacket.
     pub fn ingest_ppkt(&mut self, ppkt: Phenopacket) -> Result<(), String> {
-        let proband_id = match ppkt.subject {
-            Some(sjt) => sjt.id.clone(),
-            None => { return Err(format!("Could not extract subject from phenopacket: {:?}", ppkt));},
-        };
-        let mut observed_hpo: Vec<TermId> = Vec::new();
-        let mut disease_list: Vec<SimpleOntologyTerm> = Vec::new();
-        let mut gene_symbol_list: Vec<String> = Vec::new();
-        let mut severities: BTreeMap<String, Severity> = BTreeMap::new();
-        for pf in ppkt.phenotypic_features.iter() {
-            eprintln!("pf={:?}", pf);
-            if pf.excluded {
-                continue;
-            }
-
-            let hpo_id = match &pf.r#type {
-                Some(oclass) => oclass.id.clone(),
-                None => { return Err(format!("Could not extract id from Ontology Class: {:?}", &pf.r#type));},
-            };
-            if let Some(oclass) = &pf.severity {
-                match Severity::from_hpo_id(&oclass.id) {
-                    Some(sev) => { severities.insert(hpo_id.clone(), sev); }
-                    None => log::warn!("Unrecognized severity term {} for feature {}", oclass.id, hpo_id),
-                }
-            }
-            let hpo_tid: TermId = hpo_id.parse::<TermId>().map_err(|_| format!("Failed to parse TermId from string '{}'", hpo_id))?;
-            observed_hpo.push(hpo_tid);
-        }
-        for disease in ppkt.diseases {
-            let dterm = disease.term.as_ref()
-                .ok_or_else(|| format!("Could not extract term from disease: {:?}", disease))?;
-            let sterm = SimpleOntologyTerm::new(dterm.id.as_str(), dterm.label.as_str())?;
-            disease_list.push(sterm);
-        }
-        for interpretation in ppkt.interpretations {
-            if let Some(symbol) = ga4ghphetools::get_gene_symbol_from_interpretation(&interpretation) {
-                gene_symbol_list.push(symbol);
-            }
-        }
-        let proband = Proband { 
-            id: proband_id, 
-            gene_list: gene_symbol_list, 
-            disease_list: disease_list, 
-            observed_hpos: observed_hpo.clone(),
-            severities
-        };
-        self.individual = proband;
-        let hpo = self.hpo
+        let proband = Proband::from_phenopacket(&ppkt)?;
+        let hpo = self
+            .hpo
             .clone()
             .ok_or_else(|| "HPO ontology not loaded".to_string())?;
-       
-        let simple_observed = crate::hpo::hpo_util::ontolius_to_simple_list(hpo.as_ref(), &observed_hpo)?;
+        let simple_observed =
+            crate::hpo::hpo_util::ontolius_to_simple_list(hpo.as_ref(), &proband.observed_hpos)?;
+        self.individual = proband;
         self.init_notebook_from_ppkt(&ppkt.id, &simple_observed);
         Ok(())
     }
@@ -482,6 +440,9 @@ mod tests {
 
 use super::*;
     use crate::tests::hpo_fixture::a13;
+    use crate::tests::hpo_fixture::a13_ppkt;
+    use phenopackets::schema::v2::core::{Disease, Individual, OntologyClass, PhenotypicFeature};
+
 
     #[rstest]
     fn a13_severity_reaches_proband(a13: Phenopacket) {
@@ -496,4 +457,91 @@ use super::*;
         assert_eq!(p.gene_list, ["MYH7", "PRKAG2"]);
     }
 
+  fn class(id: &str, label: &str) -> OntologyClass {
+        OntologyClass { id: id.to_string(), label: label.to_string() }
+    }
+
+    fn feature(id: &str, excluded: bool) -> PhenotypicFeature {
+        PhenotypicFeature {
+            r#type: Some(class(id, "label")),
+            excluded,
+            ..Default::default()
+        }
+    }
+
+    fn ppkt_with(features: Vec<PhenotypicFeature>) -> Phenopacket {
+        Phenopacket {
+            id: "ppkt-1".to_string(),
+            subject: Some(Individual { id: "patient-1".to_string(), ..Default::default() }),
+            phenotypic_features: features,
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn excluded_features_are_skipped() {
+        let ppkt = ppkt_with(vec![feature("HP:0001250", false), feature("HP:0004322", true)]);
+        let proband = Proband::from_phenopacket(&ppkt).unwrap();
+        let ids: Vec<String> = proband.observed_hpos.iter().map(|t| t.to_string()).collect();
+        assert_eq!(ids, ["HP:0001250"]);
+        assert_eq!(proband.id, "patient-1");
+    }
+
+    #[test]
+    fn a_recognized_severity_is_recorded_and_an_unknown_one_ignored() {
+        let mut mild = feature("HP:0001250", false);
+        mild.severity = Some(class("HP:0012825", "Mild"));
+        let mut odd = feature("HP:0004322", false);
+        odd.severity = Some(class("HP:0000001", "Not a severity"));
+        let proband = Proband::from_phenopacket(&ppkt_with(vec![mild, odd])).unwrap();
+        assert_eq!(proband.severities.get("HP:0001250"), Some(&Severity::Mild));
+        assert!(!proband.severities.contains_key("HP:0004322"));
+        assert_eq!(proband.observed_hpos.len(), 2); // the odd severity does not drop the feature
+    }
+
+    #[test]
+    fn the_diseases_of_the_phenopacket_are_listed() {
+        let mut ppkt = ppkt_with(vec![]);
+        ppkt.diseases = vec![Disease {
+            term: Some(class("OMIM:162200", "Neurofibromatosis, type 1")),
+            ..Default::default()
+        }];
+        let proband = Proband::from_phenopacket(&ppkt).unwrap();
+        assert_eq!(proband.disease_list.len(), 1);
+        assert_eq!(proband.disease_list[0].term_id_as_string(), "OMIM:162200");
+    }
+
+    #[test]
+    fn a_missing_subject_is_an_error_naming_the_phenopacket() {
+        let mut ppkt = ppkt_with(vec![]);
+        ppkt.subject = None;
+        let err = Proband::from_phenopacket(&ppkt).unwrap_err();
+        assert!(err.contains("ppkt-1"), "{err}");
+    }
+
+    #[test]
+    fn a_feature_without_a_type_is_an_error() {
+        let mut broken = feature("HP:0001250", false);
+        broken.r#type = None;
+        let err = Proband::from_phenopacket(&ppkt_with(vec![broken])).unwrap_err();
+        assert!(err.contains("without a type"), "{err}");
+    }
+
+    #[test]
+    fn an_invalid_term_id_is_an_error() {
+        let err = Proband::from_phenopacket(&ppkt_with(vec![feature("not-an-id", false)])).unwrap_err();
+        assert!(err.contains("not-an-id"), "{err}");
+    }
+
+    #[test]
+    fn the_a13_fixture_gives_its_non_excluded_features_and_sorted_unique_genes() {
+        let ppkt = a13_ppkt();
+        let expected = ppkt.phenotypic_features.iter().filter(|f| !f.excluded).count();
+        let proband = Proband::from_phenopacket(&ppkt).unwrap();
+        assert_eq!(proband.observed_hpos.len(), expected);
+        let mut sorted = proband.gene_list.clone();
+        sorted.sort();
+        sorted.dedup();
+        assert_eq!(proband.gene_list, sorted);
+    }
 }
