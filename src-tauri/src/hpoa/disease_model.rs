@@ -86,3 +86,53 @@ pub struct GeneDiseaseAssociation {
 
 
 
+
+#[cfg(test)]
+mod tests {
+    use crate::tests::hpo_fixture::tid;
+
+    use super::*;
+    use rstest::rstest;
+    use crate::tests::hpo_fixture::{
+        entity, hpo, tids, FOCAL, SEIZURE, SHORT_STATURE, TONIC,
+    };
+    use crate::blend::disease_gene_entity::GeneDiseaseEntity;
+
+
+    fn gda(disease: &str, name: &str, terms: &[&str], freqs: &[(&str, f64)]) -> GeneDiseaseAssociation {
+        let disease_id = tid(disease);
+        GeneDiseaseAssociation {
+            ncbi_gene_id: "4763".to_string(),
+            gene_symbol: "NF1".to_string(),
+            association_type: "MENDELIAN".to_string(),
+            disease_id: disease_id.clone(),
+            disease_model: Some(SimpleDiseaseModel::new(
+                disease_id,
+                name.to_string(),
+                terms.iter().map(|t| tid(t)).collect(),
+                freqs.iter().map(|(t, f)| (tid(t), *f)).collect(),
+                HashSet::new(),
+            )),
+            source: "test".to_string(),
+        }
+    }
+
+    #[test]
+    fn frequencies_cover_exactly_the_annotated_terms() {
+        let entity = GeneDiseaseEntity::new(&[
+            gda("OMIM:162200", "Neurofibromatosis 1", &[FOCAL, SHORT_STATURE], &[(FOCAL, 0.4)]),
+            gda("OMIM:163950", "Noonan syndrome 1", &[FOCAL], &[]),
+        ])
+        .unwrap();
+
+        let with_frequencies: HashSet<&TermId> = entity.term_frequencies.keys().collect();
+        let annotated: HashSet<&TermId> = entity.disease_hpo_ids.iter().collect();
+        assert_eq!(with_frequencies, annotated);
+
+        let mut focal = entity.term_frequencies[&tid(FOCAL)].clone();
+        focal.sort_by(f64::total_cmp);
+        assert_eq!(focal, [0.4, 1.0]); // 0.4 in the first disease, unreported (100%) in the second
+        assert_eq!(entity.term_frequencies[&tid(SHORT_STATURE)], [1.0]);
+    }
+
+}

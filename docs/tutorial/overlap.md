@@ -6,7 +6,7 @@ One column is shown for each phenotypic abnormality observed (HPO terms). A gree
 
 
 
-<figure>
+<figure class="figure-centered">
   <img src="./img/overlap_plot_PMID_15948193.svg" alt="Overlap plot for NF1/Noonan syndrome case">
   <figcaption>
     Data from Bertola DR, et al. (2005) <a href="https://pubmed.ncbi.nlm.nih.gov/15948193/">Neurofibromatosis-Noonan syndrome: molecular evidence of the concurrence of both disorders in a patient. <em>Am J Med Genet A</em> <strong>136</strong>:242-5</a>

@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="395" viewBox="0 0 800 395" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" font-size="12">
+<rect width="800" height="395" rx="8" fill="#ffffff" stroke="#dddddd"/>
+<text x="20" y="28" font-size="14" font-weight="600" fill="#222">A. The urn: terms annotated to gene A or gene B</text>
+<text x="420" y="28" font-size="14" font-weight="600" fill="#222">B. How often would a random draw do this well?</text>
+<circle cx="140" cy="175" r="100" fill="#8D10CB" fill-opacity="0.07" stroke="#8D10CB" stroke-width="1.5"/>
+<circle cx="240" cy="175" r="100" fill="#8D10CB" fill-opacity="0.07" stroke="#8D10CB" stroke-width="1.5"/>
+<text x="85" y="67" text-anchor="middle" fill="#8D10CB" font-weight="600">Gene A</text>
+<text x="295" y="67" text-anchor="middle" fill="#8D10CB" font-weight="600">Gene B</text>
+<circle cx="98" cy="138" r="7" fill="#66C2A5" stroke="#2a7f67" stroke-width="1"/>
+<circle cx="74" cy="162" r="7" fill="#ffffff" stroke="#B0B0B0" stroke-width="1.5"/>
+<circle cx="98" cy="162" r="7" fill="#ffffff" stroke="#B0B0B0" stroke-width="1.5"/>
+<circle cx="122" cy="162" r="7" fill="#ffffff" stroke="#B0B0B0" stroke-width="1.5"/>
+<circle cx="74" cy="186" r="7" fill="#66C2A5" stroke="#2a7f67" stroke-width="1"/>
+<circle cx="98" cy="186" r="7" fill="#ffffff" stroke="#B0B0B0" stroke-width="1.5"/>
+<circle cx="122" cy="186" r="7" fill="#ffffff" stroke="#B0B0B0" stroke-width="1.5"/>
+<circle cx="98" cy="210" r="7" fill="#ffffff" stroke="#B0B0B0" stroke-width="1.5"/>
+<circle cx="170" cy="162" r="7" fill="#66C2A5" stroke="#2a7f67" stroke-width="1"/>
+<circle cx="194" cy="162" r="7" fill="#66C2A5" stroke="#2a7f67" stroke-width="1"/>
+<circle cx="218" cy="162" r="7" fill="#66C2A5" stroke="#2a7f67" stroke-width="1"/>
+<circle cx="170" cy="186" r="7" fill="#66C2A5" stroke="#2a7f67" stroke-width="1"/>
+<circle cx="194" cy="186" r="7" fill="#66C2A5" stroke="#2a7f67" stroke-width="1"/>
+<circle cx="218" cy="186" r="7" fill="#ffffff" stroke="#B0B0B0" stroke-width="1.5"/>
+<circle cx="266" cy="162" r="7" fill="#66C2A5" stroke="#2a7f67" stroke-width="1"/>
+<circle cx="290" cy="162" r="7" fill="#ffffff" stroke="#B0B0B0" stroke-width="1.5"/>
+<circle cx="314" cy="162" r="7" fill="#ffffff" stroke="#B0B0B0" stroke-width="1.5"/>
+<circle cx="266" cy="186" r="7" fill="#ffffff" stroke="#B0B0B0" stroke-width="1.5"/>
+<circle cx="290" cy="186" r="7" fill="#ffffff" stroke="#B0B0B0" stroke-width="1.5"/>
+<circle cx="314" cy="186" r="7" fill="#ffffff" stroke="#B0B0B0" stroke-width="1.5"/>
+<text x="85" y="297" text-anchor="middle" fill="#444">A only: 8</text>
+<text x="190" y="297" text-anchor="middle" fill="#222" font-weight="600">shared: K = 6</text>
+<text x="295" y="297" text-anchor="middle" fill="#444">B only: 6</text>
+<text x="190" y="315" text-anchor="middle" fill="#444">urn: N = 20 terms</text>
+<circle cx="32" cy="352" r="7" fill="#66C2A5" stroke="#2a7f67"/>
+<text x="46" y="356" fill="#222">term covered by the individual (m = 8, of which k = 5 are shared)</text>
+<circle cx="32" cy="374" r="7" fill="#ffffff" stroke="#B0B0B0" stroke-width="1.5"/>
+<text x="46" y="378" fill="#222">term not covered by the individual</text>
+<line x1="470" x2="760" y1="270.0" y2="270.0" stroke="#eeeeee"/>
+<text x="462" y="274.0" text-anchor="end" fill="#555">0.0</text>
+<line x1="470" x2="760" y1="220.0" y2="220.0" stroke="#eeeeee"/>
+<text x="462" y="224.0" text-anchor="end" fill="#555">0.1</text>
+<line x1="470" x2="760" y1="170.0" y2="170.0" stroke="#eeeeee"/>
+<text x="462" y="174.0" text-anchor="end" fill="#555">0.2</text>
+<line x1="470" x2="760" y1="120.0" y2="120.0" stroke="#eeeeee"/>
+<text x="462" y="124.0" text-anchor="end" fill="#555">0.3</text>
+<line x1="470" x2="760" y1="70.0" y2="70.0" stroke="#eeeeee"/>
+<text x="462" y="74.0" text-anchor="end" fill="#555">0.4</text>
+<rect x="474.0" y="258.1" width="24.2" height="11.9" fill="#D9B8EE"/>
+<text x="486.1" y="286" text-anchor="middle" fill="#555">0</text>
+<rect x="506.2" y="188.3" width="24.2" height="81.7" fill="#D9B8EE"/>
+<text x="518.3" y="286" text-anchor="middle" fill="#555">1</text>
+<rect x="538.4" y="91.2" width="24.2" height="178.8" fill="#D9B8EE"/>
+<text x="550.6" y="286" text-anchor="middle" fill="#555">2</text>
+<rect x="570.7" y="111.1" width="24.2" height="158.9" fill="#D9B8EE"/>
+<text x="582.8" y="286" text-anchor="middle" fill="#555">3</text>
+<rect x="602.9" y="210.4" width="24.2" height="59.6" fill="#D9B8EE"/>
+<text x="615.0" y="286" text-anchor="middle" fill="#555">4</text>
+<rect x="635.1" y="261.3" width="24.2" height="8.7" fill="#8D10CB"/>
+<text x="647.2" y="286" text-anchor="middle" fill="#555">5</text>
+<rect x="667.3" y="269.6" width="24.2" height="0.4" fill="#8D10CB"/>
+<text x="679.4" y="286" text-anchor="middle" fill="#555">6</text>
+<rect x="699.6" y="270.0" width="24.2" height="0.0" fill="#8D10CB"/>
+<text x="711.7" y="286" text-anchor="middle" fill="#555">7</text>
+<rect x="731.8" y="270.0" width="24.2" height="0.0" fill="#8D10CB"/>
+<text x="743.9" y="286" text-anchor="middle" fill="#555">8</text>
+<line x1="470" x2="760" y1="270" y2="270" stroke="#555"/>
+<text x="615.0" y="308" text-anchor="middle" fill="#222">shared terms among the 8 covered terms</text>
+<text transform="translate(428,170.0) rotate(-90)" text-anchor="middle" fill="#222">probability if drawn at random</text>
+<line x1="647.2" x2="647.2" y1="257.3" y2="74" stroke="#66C2A5" stroke-width="2"/>
+<polygon points="642.2,251.3 652.2,251.3 647.2,258.3" fill="#66C2A5"/>
+<text x="639.2" y="72" text-anchor="end" fill="#2a7f67" font-weight="600">observed: k = 5</text>
+<text x="615.0" y="336" text-anchor="middle" fill="#222" font-weight="600">p = P(X ≥ 5) = 2,275 / 125,970 = 0.018</text>
+<rect x="440" y="356" width="12" height="12" fill="#8D10CB"/>
+<text x="458" y="366" fill="#222">draws with 5 or more shared terms (counted in p)</text>
+<rect x="440" y="376" width="12" height="12" fill="#D9B8EE"/>
+<text x="458" y="386" fill="#222">draws with fewer shared terms</text>
+</svg>

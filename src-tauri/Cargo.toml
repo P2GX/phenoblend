@@ -48,7 +48,6 @@ itertools = "0.15.0"
 svg2pdf = "0.13"
 log = "0.4"
 tauri-plugin-log = "2"
-statrs = "0.19"
 rand = "0.10"
 uuid = { version = "1.28", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] } # Optional, if you want rich date/time handling

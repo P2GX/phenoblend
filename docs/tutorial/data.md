@@ -1,7 +1,7 @@
-# Loading data
+# Input data
 
 
-Users need to download three files from the [Human Phenotype Ontology (HPO)](https://hpo.jax.org/) website representing the ontology itself and the disease annotations. It is advisable to use the latest versions (updates are made about once every two months).
+Users need to download three files from the [Human Phenotype Ontology (HPO)](https://hpo.jax.org/). It is advisable to use the latest versions (updates are made about once every two months).
 
 ## hp.json
 

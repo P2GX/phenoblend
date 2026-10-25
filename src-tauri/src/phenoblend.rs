@@ -8,17 +8,11 @@ use ga4ghphetools::HierarchyMapItem;
 use ontolius::ontology::{MetadataAware, OntologyTerms};
 use ontolius::{TermId,  ontology::csr::FullCsrOntology};
 use phenopackets::schema::v2::Phenopacket;
-use rand::SeedableRng;
-use rand::rngs::StdRng;
 
 
 use crate::blend::disease_gene_entity::GeneDiseaseEntity;
 use crate::blend::dto::{ObservedHpoInput, OverlapData, PhenoBlendAnalysis, Severity, SpreadPlotPayload, UpsetPlotData, severity_from_ids};
 use crate::blend::spread_plot::build_spread_payload;
-use crate::enrichment::dto::DuoEnrichmentSummary;
-use crate::enrichment::gdannotation_source::{GeneDiseaseAnnotationSource, OntoliusDescendants};
-use crate::enrichment::melded_ppkt::MeldedPpkt;
-use crate::enrichment::test::{EnrichmentTest, Method};
 use crate::model::Notebook;
 use crate::model::status::InitializationStatusDto;
 use crate::{blend::dto::OverlapPlotPayload, hpoa::disease_model::SimpleDiseaseModel, model::{proband::Proband, simple_term::SimpleOntologyTerm}};
@@ -155,7 +149,7 @@ impl PhenoblendSingleton {
          let mut severities: BTreeMap<String, Severity> = BTreeMap::new();
         for obs in &observed {
             let term_id_str = &obs.term_id;
-            let tid: TermId = term_id_str.parse().map_err(|e| format!("Could not parse {term_id_str}"))?;
+            let tid: TermId = term_id_str.parse().map_err(|_| format!("Could not parse {term_id_str}"))?;
             observed_tid.push(tid);
             if let Some(sev) = severity_from_ids(&obs.modifier_ids){
                 severities.insert(term_id_str.clone(), sev);
@@ -349,53 +343,7 @@ impl PhenoblendSingleton {
 
 
 
-     pub fn get_duo_enrichment_payload(
-        &self,
-        annotations: HashMap<String, Vec<GeneDiseaseAssociation>>,
-        n_sim: usize,
-    ) -> Result<Vec<DuoEnrichmentSummary>, String> {
-        let hpo = self.hpo.as_ref().ok_or("Ontology not loaded")?;
-
-        let genes: Vec<String> = annotations.keys().cloned().collect();
-        let pairs = gene_pairs(&genes);
-        if pairs.is_empty() {
-            return Err(format!(
-                "Need at least 2 genes to test for shared enrichment, got {}: {:?}",
-                genes.len(),
-                genes
-            ));
-        }
-
-        let observed: HashSet<TermId> = self.individual.observed_hpos.iter().cloned().collect();
-        let descendants = OntoliusDescendants::new(hpo.clone());
-        // annotations passed in from the frontend now supplies both the gene
-        // list AND the per-gene disease models directly, so the adapter
-        // reads from `annotations` rather than `self.gene_to_disease_d` /
-        // `self.omim_disease_models` -- see the AnnotationSource impl below.
-        let source = GeneDiseaseAnnotationSource::new(&annotations, &descendants);
-
-        let mut results = Vec::with_capacity(pairs.len());
-        for (gene_a, gene_b) in pairs {
-            let melded = MeldedPpkt::new(gene_a.clone(), gene_b.clone(), &observed, &source);
-            let mut rng = StdRng::seed_from_u64(seed_for_pair(&self.individual.id, &gene_a, &gene_b));
-
-            let unweighted = EnrichmentTest::new(Method::Unweighted, n_sim).run(&melded, &source, &mut rng);
-            let frequency = EnrichmentTest::new(Method::Frequency, n_sim).run(&melded, &source, &mut rng);
-
-            results.push(DuoEnrichmentSummary {
-                gene_a,
-                gene_b,
-                n_union: melded.n_union(),
-                n_shared: melded.n_shared(),
-                n_obs_union: melded.n_obs_union(),
-                n_obs_shared: melded.n_obs_shared(),
-                has_overlap: melded.has_overlap(),
-                unweighted,
-                frequency,
-            });
-        }
-        Ok(results)
-    }
+   
 
      pub(crate) fn notebook_ref(&self) -> Result<&Notebook, String> {
         self.notebook
@@ -448,14 +396,18 @@ impl PhenoblendSingleton {
                 (gene, terms)
             })
             .collect();
-     //   let upset = crate::blend::upset_plot::build_upset_data(entities, &observed, hpo.as_ref())?;
         let upset_input = crate::blend::upset_plot::plot_input(entities, &observed, hpo.as_ref());
         let upset = crate::blend::upset_plot::plot_data(&upset_input)?;
         let mut genotypes: Vec<String> = entities.iter().map(|g| g.gene_symbol.clone()).collect();
         genotypes.sort();
         genotypes.dedup();
         let spread = build_spread_payload(&observed, &genotypes, entities, hpo.as_ref())?;
-        Ok(PhenoBlendAnalysis { term_matches, gene_annotations, overlap, upset, spread })
+        let enrichment = crate::blend::shared_enrichment::all_enrichments(
+            &upset_input,
+            crate::blend::shared_enrichment::DEFAULT_N_SIM,
+            &self.individual.id,
+        )?;
+        Ok(PhenoBlendAnalysis { term_matches, gene_annotations, overlap, upset, spread, enrichment })
     }
 
     /// Builds the gene-disease entities, runs the analysis, and stores both in the notebook.
@@ -481,19 +433,7 @@ impl PhenoblendSingleton {
 }
 
 
-    /// All unordered 2-combinations of `genes`, deduplicated. A proband with
-/// exactly 2 genes yields exactly 1 pair (the common case); 3+ genes yields
-/// every candidate pair, so the enrichment test doesn't need to know in
-/// advance how many genes were solved for a given proband.
-pub fn gene_pairs(genes: &[String]) -> Vec<(String, String)> {
-    let mut pairs = Vec::new();
-    for i in 0..genes.len() {
-        for j in (i + 1)..genes.len() {
-            pairs.push((genes[i].clone(), genes[j].clone()));
-        }
-    }
-    pairs
-}
+
 
 
 
@@ -529,18 +469,7 @@ impl Default for PhenoblendSingleton {
     }
 }
 
-/// Deterministic per-(proband, gene pair) seed, so re-running the analysis
-/// on the same proband and pair reproduces the same Monte Carlo draw, but
-/// different pairs within one proband don't share an RNG stream.
-fn seed_for_pair(proband_id: &str, gene_a: &str, gene_b: &str) -> u64 {
-    use std::hash::{Hash, Hasher};
-    use std::collections::hash_map::DefaultHasher;
-    let mut hasher = DefaultHasher::new();
-    proband_id.hash(&mut hasher);
-    gene_a.hash(&mut hasher);
-    gene_b.hash(&mut hasher);
-    hasher.finish()
-}
+
 
 
 

@@ -6,6 +6,7 @@ mod constants;
 mod overlap_dto;
 mod input;
 mod phenoblend_analysis;
+pub mod shared_term_enrichment;
 mod spread_dto;
 mod upset_dto;
 

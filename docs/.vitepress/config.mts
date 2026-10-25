@@ -31,7 +31,7 @@ export default defineConfig({
               { text: 'Overlap plot', link: '/tutorial/overlap' },
               { text: 'Upset plot', link: '/tutorial/upset' },
               { text: 'Phenotypic profile plot', link: '/tutorial/profile' },
-              { text: 'Notebook', link: '/tutorial/notebook' }
+              { text: 'Enrichment', link: '/tutorial/enrichment' }
             ]
           }
         ]

@@ -20,9 +20,6 @@
           </button>
           <button class="btn btn-secondary" (click)="exportMatrix('svg')" [disabled]="isLoading() || !matrixData()">📤 SVG</button>
           <button class="btn btn-secondary" (click)="exportMatrix('pdf')" [disabled]="isLoading() || !matrixData()">📄 PDF</button>
-          <button class="btn btn-primary" (click)="runDuoEnrichment()" [disabled]="isLoading() || isEnrichmentLoading()">
-    🧬 {{ isEnrichmentLoading() ? 'Analyzing…' : 'Duo Enrichment Test' }}
-  </button>
         </div>
       </div>
 
@@ -61,76 +58,79 @@
        
   
 
-  @if (isEnrichmentLoading()) {
-  <div class="loading-state">
-    <p>Running duo enrichment test in Rust engine...</p>
-  </div>
-} @else if (enrichmentError(); as error) {
-  <div class="empty-state error-state">
-    <p>⚠ {{ error }}</p>
-  </div>
-} @else if (hasEnrichmentResults()) {
-  <div class="enrichment-panel">
-    <h3>Duo Enrichment Results</h3>
-    @for (result of enrichmentResults(); track result.geneA + result.geneB) {
-      <div class="enrichment-card">
-        <div class="enrichment-header">
-          <strong>{{ result.geneA }}</strong> / <strong>{{ result.geneB }}</strong>
-          @if (isDegenerate(result)) {
-            <span class="badge badge-warning" title="All urn terms were observed; null is deterministic">
-              degenerate
-            </span>
-          }
-        </div>
+ @if (notebook()?.analysis?.enrichment; as results) {
+  @if (results.length > 0) {
+    <div class="enrichment-panel">
+      <h3>Enrichment of shared terms</h3>
+      @for (r of results; track r.genes.join('+')) {
+        <div class="enrichment-card">
+          <div class="enrichment-header">
+            @for (g of r.genes; track g; let last = $last) {
+              <strong>{{ g }}</strong>{{ last ? '' : ' + ' }}
+            }
+            @if (r.degenerate) {
+              <span class="badge badge-warning"
+                    title="The test cannot tell anything here: no shared terms, no covered terms, or the whole urn is covered. p = 1.">
+                no information
+              </span>
+            }
+          </div>
 
-        <div class="enrichment-stats">
-          <span>Shared terms: {{ result.nShared }} / {{ result.nUnion }}</span>
-          <br/>
-          <span>Observed duo terms: {{ result.nObsShared }}</span>
-        </div>
+          <div class="enrichment-stats">
+            <span>Shared terms: {{ r.nShared }} of {{ r.nUrn }}</span><br />
+            <span>Covered by the individual: {{ r.nDrawn }} of {{ r.nUrn }}</span><br />
+            <span>Shared terms covered: {{ r.nObserved }}</span>
+          </div>
 
-        <div class="enrichment-methods">
-          @if (result.unweighted; as u) {
-            <div class="method-block">
-              <div class="method-label">Unweighted (exact)</div>
-              <div class="pmf-chart">
-                @for (h of pmfBarHeights(u); track $index) {
-                  <div
-                    class="pmf-bar"
-                    [class.pmf-bar-observed]="$index === result.nObsShared"
-                    [style.height.%]="h"
-                    [title]="'k=' + $index + ', P=' + u.pmf[$index].toFixed(4)"
-                  ></div>
-                }
-              </div>
-              <div class="p-value">p = {{ formatPValue(u.pValue) }}</div>
+          <div class="method-block">
+            <div class="pmf-chart">
+              @for (h of pmfBarHeights(r.pmf); track $index) {
+                <div class="pmf-bar"
+                     [class.pmf-bar-observed]="$index === r.nObserved"
+                     [style.height.%]="h"
+                     [title]="'k=' + $index + ', P=' + r.pmf[$index].toFixed(4)"></div>
+              }
             </div>
-          }
-
-          @if (result.frequency; as f) {
-            <div class="method-block">
-              <div class="method-label">Frequency-weighted (Monte Carlo)</div>
-              <div class="pmf-chart">
-                @for (h of pmfBarHeights(f); track $index) {
-                  <div
-                    class="pmf-bar"
-                    [class.pmf-bar-observed]="$index === result.nObsShared"
-                    [style.height.%]="h"
-                    [title]="'k=' + $index + ', P=' + f.pmf[$index].toFixed(4)"
-                  ></div>
-                }
-              </div>
-              <div class="p-value">p = {{ formatPValue(f.pValue) }}</div>
+            <div class="p-value">p = {{ formatPValue(r.pValue) }}
+              <small>(mid-p {{ formatPValue(r.pMid) }})</small>
             </div>
-          } @else {
-            <div class="method-block method-unavailable">
-              <div class="method-label">Frequency-weighted</div>
-              <p><em>No HPOA frequency data available for this gene pair</em></p>
-            </div>
-          }
+          </div>
         </div>
-      </div>
+        @if (r.simulated; as s) {
+  <div class="method-block">
+    <div class="method-label">
+      Frequency-weighted simulation ({{ s.nSim.toLocaleString() }} individuals)
+    </div>
+    @if (s.nDownweightedTerms === 0) {
+      <p class="note">
+        <em>No annotation has a frequency below 100%, so all terms are equally likely and this
+        estimates the exact test.</em>
+      </p>
     }
+    <div class="pmf-chart">
+      @for (h of pmfBarHeights(s.pmf); track $index) {
+        <div class="pmf-bar"
+             [class.pmf-bar-observed]="$index === r.nObserved"
+             [style.height.%]="h"
+             [title]="'k=' + $index + ', P=' + s.pmf[$index].toFixed(4)"></div>
+      }
+    </div>
+    <div class="p-value">p = {{ formatPValue(s.pValue) }}
+      <small>(seed {{ s.seed }})</small>
+    </div>
+    @if (s.expectedShared) {
+      <small>“Expected shared terms: 3.6 (exact), {{ s.expectedShared.toFixed(1) }} (weighted)”</small>
+      <small>
+        Mean weight: shared {{ s.meanWeightShared?.toFixed(2) ?? '–' }},
+        other terms {{ s.meanWeightUnshared?.toFixed(2) ?? '–' }}
+      </small>
+    }
+    
   </div>
+}
+      }
+    </div>
+    
+  }
 }
     </div>

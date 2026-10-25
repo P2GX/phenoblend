@@ -1,0 +1,11 @@
+.figure-centered { text-align: center; margin: 1.5rem 0; }
+.figure-centered img { max-width: 100%; height: auto; }
+.figure-centered figcaption { font-size: 75%; color: var(--vp-c-text-2); }
+
+.vp-doc { counter-reset: figure; }
+
+.figure-centered figcaption::before {
+  counter-increment: figure;
+  content: "Figure " counter(figure) ". ";
+  font-weight: 600;
+}

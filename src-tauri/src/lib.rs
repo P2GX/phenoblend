@@ -28,7 +28,6 @@ use ga4ghphetools::{pick_file_and_process, load_ontology, OntologyLoadEvent};
 use crate::blend::dto::ObservedHpoInput;
 use crate::blend::dto::UpsetPlotData;
 use crate::blend::dto::SpreadPlotPayload;
-use crate::enrichment::dto::DuoEnrichmentSummary;
 use crate::model::Notebook;
 use crate::{blend::dto::OverlapPlotPayload, phenoblend::PhenoblendSingleton};
 use crate::model::status::InitializationStatusDto;
@@ -69,7 +68,6 @@ pub fn run() {
         )
         .invoke_handler(tauri::generate_handler![
             add_observed_hpos_from_ner,
-            analyze_duo_enrichment,
             autocomplete_gene_symbol,
             check_initialization_status,
             export_svg_to_pdf,
@@ -117,7 +115,6 @@ fn ingest_phenopacket(
         singleton.ingest_ppkt(phenopacket)?;
         Ok(singleton.notebook_ref()?.clone())
     })();
-    eprintln!("result={:?}", result);
     match result {
         Ok(snapshot) => {
             if let Err(e) = emit_notebook(&app, &snapshot) {
@@ -438,16 +435,7 @@ async fn export_svg_to_pdf(
 
 const DEFAULT_N_SIM: usize = 100_000;
 
-#[tauri::command]
-fn analyze_duo_enrichment(
-    state: tauri::State<'_, Arc<AppState>>,
-    annotations: HashMap<String, Vec<GeneDiseaseAssociation>>,
-    n_sim: Option<usize>,
-) -> Result<Vec<DuoEnrichmentSummary>, String> {
-    let state_handle = state.inner().clone();
-    let singleton = state_handle.phenoblend.lock().map_err(|e| e.to_string())?;
-    singleton.get_duo_enrichment_payload(annotations, n_sim.unwrap_or(DEFAULT_N_SIM))
-}
+
 
 #[tauri::command]
 fn initialize_notebook(

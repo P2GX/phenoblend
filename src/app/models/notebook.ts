@@ -147,3 +147,36 @@ export function initialNotebook(): Notebook {
     };
     return n;
 }
+
+
+export interface SimulatedEnrichment {
+  nSim: number;
+  seed: string;               // a string: see above
+  pmf: number[];              // fraction of simulated individuals with x shared terms
+  pValue: number;             // empirical: (tail + 1) / (nSim + 1)
+  nDownweightedTerms: number; // urn terms with a reported frequency below 100%
+  expectedShared: number | null;
+  meanWeightShared: number | null;
+  meanWeightUnshared: number | null;
+}
+
+
+
+export interface SharedTermEnrichment {
+  genes: string[];
+  nUrn: number;       // N: terms annotated to at least one gene
+  nShared: number;    // K: terms shared by all the genes
+  nDrawn: number;     // m: urn terms the individual covers
+  nObserved: number;  // k: shared terms the individual covers
+  pmf: number[];      // pmf[x] = P(X = x) under the null
+  pValue: number;
+  pMid: number;
+  degenerate: boolean;
+  simulated?: SimulatedEnrichment;
+  expectedShared: number;
+}
+
+export interface PhenoBlendAnalysis {
+  // ... existing fields ...
+  enrichment: SharedTermEnrichment[];
+}

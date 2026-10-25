@@ -512,6 +512,7 @@ mod payload_tests {
             disease_hpo_ids: ids.iter().map(|s| tid(s)).collect(),
             ncbi_gene_id: "0".to_string(),
             disease_list: vec![],
+            term_frequencies: HashMap::default(),
         }
     }
 

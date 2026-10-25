@@ -2,7 +2,7 @@ use std::{collections::{HashMap, HashSet},  sync::Arc};
 
 use ontolius::{TermId, ontology::{TaxonomyQuery, csr::FullCsrOntology}};
 use serde::{Serialize, Serializer};
-use crate::{blend::dto::{GeneMatch, OverlapData, OverlapPlotPayload, ROOT_PHENOTYPE_TERM_ID, SIMPLE_ROOT_TERM, TermMatches}, hpo::hpo_util::ontolius_to_simple, hpoa::disease_model::GeneDiseaseAssociation, model::{proband::Proband, simple_term::SimpleOntologyTerm}};
+use crate::{blend::{dto::{GeneMatch, OverlapData, OverlapPlotPayload, ROOT_PHENOTYPE_TERM_ID, SIMPLE_ROOT_TERM, TermMatches}, frequencies::collect_frequencies}, hpo::hpo_util::ontolius_to_simple, hpoa::disease_model::GeneDiseaseAssociation, model::{proband::Proband, simple_term::SimpleOntologyTerm}};
 use log::{trace};
 
 fn serialize_term_id_set<S>(ids: &HashSet<TermId>, serializer: S) -> Result<S::Ok, S::Error>
@@ -187,15 +187,16 @@ pub struct GeneDiseaseEntity {
     pub gene_symbol: String,
     pub disease_list: Vec<SimpleOntologyTerm>,
     #[serde(serialize_with = "serialize_term_id_set")]
-    pub(crate) disease_hpo_ids: HashSet<TermId> 
+    pub(crate) disease_hpo_ids: HashSet<TermId>,
+    #[serde(skip)]
+    pub(crate) term_frequencies: HashMap<TermId, Vec<f64>>
 }
-
 impl GeneDiseaseEntity {
-    pub fn new(gda_list: &Vec<GeneDiseaseAssociation>) -> Result<Self, String> {
+    pub fn new(gda_list: &[GeneDiseaseAssociation]) -> Result<Self, String> {
         let first_gda = gda_list.first().ok_or("gda_list cannot be empty")?;
         let ncbi_gene_id = first_gda.ncbi_gene_id.clone();
         let gene_symbol = first_gda.gene_symbol.clone();
-        
+
         let mut disease_list = Vec::with_capacity(gda_list.len());
         let mut disease_hpo_ids = HashSet::new();
 
@@ -203,22 +204,25 @@ impl GeneDiseaseEntity {
             if d.ncbi_gene_id != ncbi_gene_id || d.gene_symbol != gene_symbol {
                 return Err("gda_list contains mismatched Gene id/symbol".to_string());
             }
-            let model = d.disease_model.clone()
+            let model = d
+                .disease_model
+                .as_ref()
                 .ok_or_else(|| format!("Could not find model for gene {}", gene_symbol))?;
-            disease_hpo_ids.extend(model.observed_hpo_ids);
-            let simple_disease_term = SimpleOntologyTerm::new(
+            disease_hpo_ids.extend(model.observed_hpo_ids.iter().cloned());
+            disease_list.push(SimpleOntologyTerm::new(
                 model.omim_disease_id.to_string(),
-                model.omim_disease_name.clone()
-            )?;
-            disease_list.push(simple_disease_term);
+                model.omim_disease_name.clone(),
+            )?);
         }
         Ok(Self {
-            ncbi_gene_id: ncbi_gene_id,
-            gene_symbol: gene_symbol,
-            disease_list: disease_list,
-            disease_hpo_ids: disease_hpo_ids
+            ncbi_gene_id,
+            gene_symbol,
+            disease_list,
+            disease_hpo_ids,
+            term_frequencies: collect_frequencies(gda_list),
         })
     }
+
 
     pub fn get_overlap_matrix_payload(
         proband: Proband, 
@@ -234,7 +238,6 @@ impl GeneDiseaseEntity {
             Ok(overlap_data.to_payload())
     }
    
-
 }
 
 
@@ -289,7 +292,8 @@ mod tests {
             gene_symbol:"BRCA1".to_string(),
             disease_hpo_ids: hpo_set, 
             ncbi_gene_id: "672".to_string(), 
-            disease_list: vec![bca]
+            disease_list: vec![bca],
+            term_frequencies: HashMap::default()
         };
 
 

@@ -12,7 +12,7 @@ the count of HPO terms in the disease model related to each of the genes in the 
 
 
 
-<figure>
+<figure class="figure-centered">
   <img src="./img/upset-NF1-PTPN11.svg" alt="Upset plot for NF1/Noonan syndrome case">
   <figcaption>
     Data from Bertola DR, et al. (2005) <a href="https://pubmed.ncbi.nlm.nih.gov/15948193/">Neurofibromatosis-Noonan syndrome: molecular evidence of the concurrence of both disorders in a patient. <em>Am J Med Genet A</em> <strong>136</strong>:242-5</a>

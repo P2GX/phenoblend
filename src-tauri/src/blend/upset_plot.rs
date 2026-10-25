@@ -17,15 +17,15 @@
 //! term more specific than the proband's) is deliberately *not* a match.
 use std::collections::{BTreeMap, BTreeSet};
 
-use ontolius::{TermId, ontology::{TaxonomyWalk, csr::FullCsrOntology}};
-use serde::{Deserialize, Serialize};
+use ontolius::{TermId, ontology::csr::FullCsrOntology};
+
 
 use crate::{blend::{disease_gene_entity::{GeneDiseaseEntity, simple_term}, dto::{GeneKey, GeneTerms, MatchedTerm, ProbandSegment, ProbandTermMatch, TermKey, UpsetColumnData, UpsetPlotData, UpsetPlotInput, UpsetRowData, UpsetSummary, closure_of}}, model::simple_term::SimpleOntologyTerm};
 
 
 /// Most genes combined in one column. Multiple genetic diagnoses with more than four genes
 /// are not expected, and the number of combinations grows quickly.
-const MAX_GENES_PER_COLUMN: usize = 4;
+pub(crate) const MAX_GENES_PER_COLUMN: usize = 4;
 
 
 
@@ -36,6 +36,7 @@ const MAX_GENES_PER_COLUMN: usize = 4;
 /// Step 1: expands the proband's observed terms and the genes' annotations to closures.
 ///
 /// Diseases that share a gene are pooled into one [`GeneTerms`].
+/// Collects a label for every observed and annotated term, and the annotation frequencies of each gene’s terms
 pub fn plot_input(
     entities: &[GeneDiseaseEntity],
     observed: &[TermId],
@@ -55,6 +56,9 @@ pub fn plot_input(
         for t in &e.disease_hpo_ids {
             terms.entry(t.to_string()).or_insert_with(|| simple_term(hpo, t));
             gt.add_term(hpo, t);
+        }
+        for (t, freqs) in &e.term_frequencies {
+            gt.frequencies.entry(t.to_string()).or_default().extend(freqs.iter().copied());
         }
     }
     UpsetPlotInput { proband_closures, gene_annotations, terms }
@@ -119,12 +123,11 @@ fn row_for(gene: &GeneKey, gt: &GeneTerms, ctx: &Ctx) -> Result<UpsetRowData, St
     })
 }
 
-/// Builds the column for the genes at `indices`, which must be non-empty.
-fn column_for(
-    indices: &[usize],
-    genes: &[&GeneTerms],
-    ctx: &Ctx,
-) -> Result<UpsetColumnData, String> {
+/// The terms shared by all genes at `indices` (which must be non-empty) under the true-path
+/// rule: a term counts if every gene is annotated with it or one of its descendants, and at
+/// least one of the genes is annotated with it explicitly. The more general term stands for
+/// a shared annotation.
+pub(crate) fn shared_terms(indices: &[usize], genes: &[&GeneTerms]) -> BTreeSet<TermKey> {
     let mut common = genes[indices[0]].closure.clone();
     let mut annotated_by_any: BTreeSet<TermKey> = BTreeSet::new();
     for &i in indices {
@@ -132,6 +135,16 @@ fn column_for(
         annotated_by_any.extend(genes[i].annotated.iter().cloned());
     }
     common.retain(|t| annotated_by_any.contains(t));
+    common
+}
+
+/// Builds the column for the genes at `indices`, which must be non-empty.
+fn column_for(
+    indices: &[usize],
+    genes: &[&GeneTerms],
+    ctx: &Ctx,
+) -> Result<UpsetColumnData, String> {
+    let common = shared_terms(indices, genes);
 
     let mut matched_terms = Vec::new();
     let mut unmatched_terms = Vec::new();
@@ -269,7 +282,7 @@ mod tests {
     use super::*;
     use crate::tests::hpo_fixture::hpo;
     use rstest::rstest;
-    use std::{collections::HashSet, sync::Arc};
+    use std::{collections::{HashMap, HashSet}, sync::Arc};
 
     // ---------------------------------------------------------------------------------
     // The real HPO is loaded once by the fixture. These tests use only the terms below;
@@ -307,7 +320,7 @@ mod tests {
             disease_hpo_ids: m,
             ncbi_gene_id: "123".to_string(),
             disease_list: Vec::default(),
-            
+            term_frequencies: HashMap::default(),
         }
     }
 
@@ -613,5 +626,38 @@ mod tests {
         }
         let s = &data.summary;
         assert_eq!(s.n_proband_explained + s.n_proband_unexplained, s.n_proband_terms);
+    }
+
+    #[rstest]
+    fn shared_terms_uses_the_more_general_term(hpo: Arc<FullCsrOntology>) {
+        let input = plot_input(&[entity("A", &[FOCAL]), entity("B", &[SEIZURE])], &[], &hpo);
+        let genes: Vec<&GeneTerms> = input.gene_annotations.values().collect();
+        assert_eq!(shared_terms(&[0, 1], &genes), set(&[SEIZURE]));
+    }
+
+    #[rstest]
+    fn plot_input_carries_the_frequencies_of_annotated_terms_only(hpo: Arc<FullCsrOntology>) {
+        let mut e = entity("A", &[FOCAL]);
+        e.term_frequencies.insert(tid(FOCAL), vec![0.4, 1.0]);
+        let input = plot_input(&[e], &[], &hpo);
+        let a = &input.gene_annotations["A"];
+        assert_eq!(a.frequencies[FOCAL], [0.4, 1.0]);
+        assert_eq!(a.frequencies.len(), 1); // the ancestors of FOCAL get no entry
+    }
+
+    #[rstest]
+    fn frequencies_of_diseases_pooled_into_one_gene_are_combined(hpo: Arc<FullCsrOntology>) {
+        let mut first = entity("A", &[FOCAL]);
+        first.term_frequencies.insert(tid(FOCAL), vec![0.4]);
+        let mut second = entity("A", &[FOCAL]);
+        second.term_frequencies.insert(tid(FOCAL), vec![0.9]);
+        let input = plot_input(&[first, second], &[], &hpo);
+        assert_eq!(input.gene_annotations["A"].frequencies[FOCAL], [0.4, 0.9]);
+    }
+
+    #[rstest]
+    fn terms_without_frequencies_have_no_entry(hpo: Arc<FullCsrOntology>) {
+        let input = plot_input(&[entity("A", &[FOCAL])], &[], &hpo);
+        assert!(input.gene_annotations["A"].frequencies.is_empty());
     }
 }

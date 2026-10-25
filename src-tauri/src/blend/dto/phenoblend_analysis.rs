@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
-use crate::{blend::dto::{UpsetPlotData, overlap_dto::{OverlapData, OverlapPlotPayload, TermMatches}, spread_dto::SpreadPlotPayload}, model::simple_term::SimpleOntologyTerm};
+use crate::{blend::dto::{UpsetPlotData, overlap_dto::{OverlapData, OverlapPlotPayload, TermMatches}, shared_term_enrichment::SharedTermEnrichment, spread_dto::SpreadPlotPayload}, model::simple_term::SimpleOntologyTerm};
 
 
 
@@ -14,6 +14,9 @@ pub struct PhenoBlendAnalysis {
     pub overlap: OverlapData,
     pub upset: UpsetPlotData,   
     pub spread: SpreadPlotPayload, 
+    /// Exact enrichment of shared terms: every pair of genes, plus all the genes together for
+    /// three or four. See [`SharedTermEnrichment`].
+    pub enrichment: Vec<SharedTermEnrichment>,
 }
 
 
@@ -23,13 +26,16 @@ impl PhenoBlendAnalysis {
         annotations: BTreeMap<String, Vec<SimpleOntologyTerm>>,
         overlap: OverlapData,
         upset: UpsetPlotData,
-        spread: SpreadPlotPayload) -> Self {
+        spread: SpreadPlotPayload,
+        enrichment: Vec<SharedTermEnrichment>
+    ) -> Self {
             Self { 
                 term_matches, 
                 gene_annotations: annotations, 
                 overlap, 
                 upset,
-                spread
+                spread,
+                enrichment
             }
     } 
 

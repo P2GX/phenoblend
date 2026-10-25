@@ -1,12 +1,12 @@
 use flate2::bufread::GzDecoder;
-use ontolius::{ontology::csr::FullCsrOntology, io::OntologyLoaderBuilder};
+use ontolius::{TermId, io::OntologyLoaderBuilder, ontology::csr::FullCsrOntology};
 use phenopackets::schema::v2::Phenopacket;
 use rstest::fixture;
 use std::{
-    fs::File,
-    io::BufReader,
-    sync::{Arc, LazyLock},
+    collections::HashMap, fs::File, io::BufReader, sync::{Arc, LazyLock},
 };
+
+use crate::{blend::disease_gene_entity::GeneDiseaseEntity, model::simple_term::SimpleOntologyTerm};
 
 /// A thread-safe, lazily-loaded singleton instance of the FullCsrOntology (HPO).
 /// 
@@ -50,4 +50,36 @@ pub fn a13_ppkt() -> Phenopacket {
 #[rstest::fixture]
 pub fn a13() -> Phenopacket { 
     a13_ppkt() 
+}
+
+
+// Real HPO terms used by the tests. `fixture_relationships_hold` (in the upset_plot tests)
+// checks the ontology facts they rely on.
+pub const ROOT: &str = "HP:0000118"; // Phenotypic abnormality
+pub const SEIZURE: &str = "HP:0001250";
+pub const FOCAL: &str = "HP:0007359"; // Focal-onset seizure, a seizure type
+pub const TONIC: &str = "HP:0010818"; // Generalized tonic seizure, another seizure type
+pub const SHORT_STATURE: &str = "HP:0004322"; // unrelated to seizures
+pub const SCOLIOSIS: &str = "HP:0002650"; // unrelated to seizures and to short stature
+
+pub fn tid(s: &str) -> TermId {
+    s.parse().expect("valid CURIE")
+}
+
+pub fn tids(ts: &[&str]) -> Vec<TermId> {
+    ts.iter().map(|t| tid(t)).collect()
+}
+
+/// One gene with the given directly annotated terms. The gene id and the disease are
+/// placeholders: the tests only use the gene symbol and the HPO term ids.
+pub fn entity(gene: &str, ts: &[&str]) -> GeneDiseaseEntity {
+    GeneDiseaseEntity {
+        ncbi_gene_id: format!("test-{gene}"),
+        gene_symbol: gene.to_string(),
+        disease_list: vec![
+            SimpleOntologyTerm::new("OMIM:000000", format!("Test disease of {gene}")).unwrap(),
+        ],
+        disease_hpo_ids: tids(ts).into_iter().collect(),
+        term_frequencies: HashMap::new()
+    }
 }

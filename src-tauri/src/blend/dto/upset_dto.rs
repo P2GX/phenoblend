@@ -20,6 +20,11 @@ pub struct GeneTerms {
     pub annotated: BTreeSet<TermKey>,
     /// `annotated` plus all ancestors (true-path closure); always a superset of `annotated`.
     pub closure: BTreeSet<TermKey>,
+    /// For each annotated term, the frequency reported in each disease that annotates it (one
+    /// value per disease; 1.0 when the annotation has no explicit frequency). Ancestors that no
+    /// gene annotates have no entry.
+    #[serde(default)]
+    pub frequencies: BTreeMap<TermKey, Vec<f64>>,
 }
 
 
