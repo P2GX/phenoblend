@@ -131,8 +131,13 @@ Look for a link such as `http://localhost:5173/phenoblend/` in the shell and cli
 
 ```bash
 cd src-tauri
-cargo run --release --features cli --bin phenoblend-batch -- --phenopackets ../ppkts --hpo hp.json --hpoa phenotype.hpoa --out results.tsv --shuffle-seed 42
+cargo run --release --features cli --bin phenoblend-batch -- --phenopackets ../ppkts --hpo hp.json --hpoa phenotype.hpoa --out results.tsv [--shuffle-seed 42]
 ```
 
+To analyze the results, we can use the scripts in the `scripts` folder.
 
-TODO: details
+```bash
+ Rscript qq_plot.R ../src-tauri/results.tsv 
+```
+
+The scripts `summarize_batch.py` and `shuffle_test.py` provide further assessments. 
